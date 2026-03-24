@@ -89,7 +89,7 @@ class SlackReportBuilder
                                 'text' => [
                                     'type' => 'plain_text',
                                     'emoji' => true,
-                                    'text' => $this->truncateMiddle($campaign->name, 72),
+                                    'text' => $this->dropdownCampaignName($campaign->name),
                                 ],
                                 'value' => $campaign->campaign_id,
                             ])
@@ -125,19 +125,9 @@ class SlackReportBuilder
         return number_format($value, 2, ',', '.').'€';
     }
 
-    protected function truncateMiddle(string $text, int $maxLength): string
+    protected function dropdownCampaignName(string $name): string
     {
-        if (mb_strlen($text) <= $maxLength) {
-            return $text;
-        }
-
-        $visibleLength = $maxLength - 3;
-        $startLength = (int) ceil($visibleLength / 2);
-        $endLength = (int) floor($visibleLength / 2);
-
-        return mb_substr($text, 0, $startLength)
-            .'...'
-            .mb_substr($text, -$endLength);
+        return preg_replace('/^Coredrive\s+\|\s+/u', '', $name) ?: $name;
     }
 
     public function withAdStatus(array $message, string $adId, string $statusText): array
