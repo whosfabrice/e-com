@@ -30,7 +30,7 @@ class MetaAdDuplicator
                 'name' => (string) ($sourceAd['name'] ?? "Ad {$adId}"),
                 'adset_id' => $targetAdSet['id'],
                 'creative' => json_encode(['creative_id' => $creativeId], JSON_THROW_ON_ERROR),
-                'status' => 'PAUSED',
+                'status' => 'ACTIVE',
             ],
         );
 
