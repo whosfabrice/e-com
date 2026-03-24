@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Brand;
 use App\Services\Meta\MetaAdDuplicator;
 use App\Services\Slack\SlackApiClient;
+use App\Services\Slack\SlackReportBuilder;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -21,14 +22,14 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
         public string $adName,
         public string $campaignName,
         public ?string $channelId = null,
-        public ?string $threadTs = null,
-        public ?string $commentTs = null,
+        public ?string $messageTs = null,
     ) {
     }
 
     public function handle(
         MetaAdDuplicator $metaAdDuplicator,
         SlackApiClient $slackApiClient,
+        SlackReportBuilder $slackReportBuilder,
     ): void
     {
         $brand = Brand::query()->findOrFail($this->brandId);
@@ -47,17 +48,16 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
 
         $createdAdId = is_string($result['id'] ?? null) ? $result['id'] : null;
 
-        $this->updateThreadReply(
+        $this->updateReportMessage(
             $slackApiClient,
+            $slackReportBuilder,
             sprintf(
-                'Added <%s|%s> to <%s|%s>.%s',
-                $this->adUrl($brand, $createdAdId ?? $this->adId),
-                $this->adDisplayName(),
+                '✅ Added to <%s|%s>. %s',
                 $this->campaignUrl($brand),
                 $this->campaignName,
                 $createdAdId !== null
-                    ? sprintf(' <https://www.facebook.com/adsmanager/manage/ads?act=%s&selected_ad_ids=%s|Open duplicated ad>.', $brand->meta_ad_account_id, $createdAdId)
-                    : '',
+                    ? sprintf('<%s|Open duplicated ad>', $this->adUrl($brand, $createdAdId))
+                    : sprintf('<%s|Open source ad>', $this->adUrl($brand, $this->adId)),
             ),
         );
 
@@ -72,31 +72,42 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
     {
         $brand = Brand::query()->find($this->brandId);
 
-        if ($brand === null || $this->channelId === null || $this->commentTs === null) {
+        if ($brand === null || $this->channelId === null || $this->messageTs === null) {
             return;
         }
 
-        app(SlackApiClient::class)->updateMessage($this->channelId, $this->commentTs, [
-            'text' => sprintf(
-                'Failed to add <%s|%s> to <%s|%s>: %s',
-                $this->adUrl($brand, $this->adId),
-                $this->adDisplayName(),
+        $slackApiClient = app(SlackApiClient::class);
+        $slackReportBuilder = app(SlackReportBuilder::class);
+
+        $this->updateReportMessage(
+            $slackApiClient,
+            $slackReportBuilder,
+            sprintf(
+                '❌ Failed for <%s|%s>: %s',
                 $this->campaignUrl($brand),
                 $this->campaignName,
                 $throwable->getMessage(),
             ),
-        ]);
+        );
     }
 
-    protected function updateThreadReply(SlackApiClient $slackApiClient, string $text): void
+    protected function updateReportMessage(
+        SlackApiClient $slackApiClient,
+        SlackReportBuilder $slackReportBuilder,
+        string $statusText,
+    ): void
     {
-        if ($this->channelId === null || $this->commentTs === null) {
+        if ($this->channelId === null || $this->messageTs === null) {
             return;
         }
 
-        $slackApiClient->updateMessage($this->channelId, $this->commentTs, [
-            'text' => $text,
-        ]);
+        $message = $slackApiClient->fetchMessage($this->channelId, $this->messageTs);
+
+        $slackApiClient->updateMessage(
+            $this->channelId,
+            $this->messageTs,
+            $slackReportBuilder->withAdStatus($message, $this->adId, $statusText),
+        );
     }
 
     protected function campaignUrl(Brand $brand): string

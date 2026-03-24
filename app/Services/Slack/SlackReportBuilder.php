@@ -100,4 +100,32 @@ class SlackReportBuilder
     {
         return number_format($value, 2, ',', '.').'€';
     }
+
+    public function withAdStatus(array $message, string $adId, string $statusText): array
+    {
+        $blocks = collect($message['blocks'] ?? [])
+            ->map(function (array $block) use ($adId, $statusText): array {
+                if (($block['block_id'] ?? null) !== 'winner_'.$adId) {
+                    return $block;
+                }
+
+                return [
+                    'type' => 'context',
+                    'block_id' => 'winner_'.$adId,
+                    'elements' => [
+                        [
+                            'type' => 'mrkdwn',
+                            'text' => $statusText,
+                        ],
+                    ],
+                ];
+            })
+            ->values()
+            ->all();
+
+        return [
+            'text' => (string) ($message['text'] ?? 'Media Buying Summary'),
+            'blocks' => $blocks,
+        ];
+    }
 }

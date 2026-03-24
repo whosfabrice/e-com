@@ -28,6 +28,24 @@ class SlackApiClient
         ]);
     }
 
+    public function fetchMessage(string $channelId, string $ts): array
+    {
+        $response = $this->request('conversations.history', [
+            'channel' => $channelId,
+            'latest' => $ts,
+            'inclusive' => true,
+            'limit' => 1,
+        ]);
+
+        $message = $response['messages'][0] ?? null;
+
+        if (! is_array($message)) {
+            throw new RuntimeException('Slack API error: message_not_found');
+        }
+
+        return $message;
+    }
+
     public function updateMessage(string $channelId, string $ts, array $message): array
     {
         return $this->request('chat.update', [

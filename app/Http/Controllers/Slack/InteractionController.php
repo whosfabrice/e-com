@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackInteractionPayload;
 use App\Services\Slack\SlackModalBuilder;
+use App\Services\Slack\SlackReportBuilder;
 use App\Services\Slack\SlackSignatureVerifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class InteractionController extends Controller
         SlackApiClient $slackApiClient,
         SlackInteractionPayload $slackInteractionPayload,
         SlackModalBuilder $slackModalBuilder,
+        SlackReportBuilder $slackReportBuilder,
         SlackSignatureVerifier $slackSignatureVerifier,
     ): JsonResponse {
         if (! $slackSignatureVerifier->isValid($request)) {
@@ -53,7 +55,7 @@ class InteractionController extends Controller
                     $adName = $slackInteractionPayload->adName($payload);
                     $campaignId = $slackInteractionPayload->selectedCampaignId($payload);
                     $channelId = $slackInteractionPayload->channelId($payload);
-                    $threadTs = $slackInteractionPayload->threadTs($payload);
+                    $messageTs = $slackInteractionPayload->threadTs($payload);
 
                     if ($campaignId === null) {
                         return response()->json([
@@ -68,25 +70,22 @@ class InteractionController extends Controller
                         ->where('campaign_id', $campaignId)
                         ->firstOrFail();
 
-                    $commentTs = null;
+                    if ($channelId !== null && $messageTs !== null) {
+                        $message = $slackApiClient->fetchMessage($channelId, $messageTs);
 
-                    if ($channelId !== null && $threadTs !== null) {
-                        $comment = $slackApiClient->postMessage($channelId, [
-                            'thread_ts' => $threadTs,
-                            'text' => sprintf(
-                                'Adding <%s|%s> to <%s|%s>.',
+                        $slackApiClient->updateMessage(
+                            $channelId,
+                            $messageTs,
+                            $slackReportBuilder->withAdStatus(
+                                $message,
+                                $adId,
                                 sprintf(
-                                    'https://www.facebook.com/adsmanager/manage/ads?act=%s&selected_ad_ids=%s',
-                                    $brand->meta_ad_account_id,
-                                    $adId,
+                                    '⏳ Duplicating into <%s|%s>...',
+                                    $campaign->metaAdsManagerUrl(),
+                                    $campaign->name,
                                 ),
-                                $adName !== '' ? $adName : "Ad {$adId}",
-                                $campaign->metaAdsManagerUrl(),
-                                $campaign->name,
                             ),
-                        ]);
-
-                        $commentTs = is_string($comment['ts'] ?? null) ? $comment['ts'] : null;
+                        );
                     }
 
                     DuplicateMetaAdToCampaign::dispatch(
@@ -96,8 +95,7 @@ class InteractionController extends Controller
                         $adName,
                         $campaign->name,
                         $channelId,
-                        $threadTs,
-                        $commentTs,
+                        $messageTs,
                     );
 
                     return response()->json([
