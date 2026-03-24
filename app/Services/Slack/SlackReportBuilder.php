@@ -47,6 +47,14 @@ class SlackReportBuilder
                     ],
                 ],
             ],
+            [
+                'type' => 'header',
+                'text' => [
+                    'type' => 'plain_text',
+                    'emoji' => true,
+                    'text' => 'Creative Testing Winners',
+                ],
+            ],
         ];
 
         foreach ($winnerAds as $winnerAd) {
