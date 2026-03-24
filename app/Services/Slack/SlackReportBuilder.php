@@ -4,7 +4,6 @@ namespace App\Services\Slack;
 
 use App\Enums\AdvertisingPlatform;
 use App\Enums\CampaignPhase;
-use App\Enums\TargetMetric;
 use App\Models\Brand;
 use Illuminate\Support\Collection;
 
@@ -12,17 +11,6 @@ class SlackReportBuilder
 {
     public function build(Brand $brand, Collection $winnerAds): array
     {
-        $testingCampaignNames = $brand->campaigns()
-            ->where('advertising_platform', AdvertisingPlatform::Meta->value)
-            ->where('phase', CampaignPhase::Phase2->value)
-            ->pluck('name')
-            ->implode(', ');
-
-        $targetCpa = $brand->targets()
-            ->where('platform', AdvertisingPlatform::Meta->value)
-            ->where('metric', TargetMetric::Cpa->value)
-            ->value('value');
-
         $blocks = [
             [
                 'type' => 'header',
@@ -40,35 +28,37 @@ class SlackReportBuilder
                     'text' => 'Creative Testing Winners',
                 ],
             ],
-                        [
+            [
                 'type' => 'context',
                 'elements' => [
                     [
                         'type' => 'mrkdwn',
-                        'text' => "Identified {$winnerAds->count()} winner creative".($winnerAds->count() === 1 ? '' : 's').' in testing, that have not been added to a scaling campaign yet.',
+                        'text' => $winnerAds->isEmpty()
+                            ? "No winning creatives in testing that haven't been added to a scaling campaign."
+                            : 'Identified '.$winnerAds->count().' winner creative'.($winnerAds->count() === 1 ? '' : 's').' in testing, that have not been added to a scaling campaign yet.',
                     ],
                 ],
             ],
         ];
 
-        foreach ($winnerAds as $winnerAd) {
-            $campaignOptions = $brand->campaigns()
-                ->where('advertising_platform', AdvertisingPlatform::Meta->value)
-                ->where('phase', CampaignPhase::Phase4->value)
-                ->orderBy('name')
-                ->take(100)
-                ->get()
-                ->map(fn ($campaign): array => [
-                    'text' => [
-                        'type' => 'plain_text',
-                        'emoji' => true,
-                        'text' => $this->dropdownCampaignName($campaign->name),
-                    ],
-                    'value' => $campaign->campaign_id,
-                ])
-                ->values()
-                ->all();
+        $campaignOptions = $brand->campaigns()
+            ->where('advertising_platform', AdvertisingPlatform::Meta->value)
+            ->where('phase', CampaignPhase::Phase4->value)
+            ->orderBy('name')
+            ->take(100)
+            ->get()
+            ->map(fn ($campaign): array => [
+                'text' => [
+                    'type' => 'plain_text',
+                    'emoji' => true,
+                    'text' => $this->dropdownCampaignName($campaign->name),
+                ],
+                'value' => $campaign->campaign_id,
+            ])
+            ->values()
+            ->all();
 
+        foreach ($winnerAds as $winnerAd) {
             $blocks[] = ['type' => 'divider'];
             $blocks[] = [
                 'type' => 'section',

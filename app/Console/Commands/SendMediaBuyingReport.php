@@ -29,15 +29,15 @@ class SendMediaBuyingReport extends Command
         foreach ($brands as $brand) {
             $winnerAds = $metaWinnerAdService->forBrand($brand);
 
-            if ($winnerAds->isEmpty()) {
-                $this->info(sprintf('No winner ads found for %s.', $brand->name));
-                continue;
-            }
-
             $slackApiClient->postMessage(
                 $brand->slack_channel_id,
                 $slackReportBuilder->build($brand, $winnerAds),
             );
+
+            if ($winnerAds->isEmpty()) {
+                $this->info(sprintf('Sent empty-state report for %s.', $brand->name));
+                continue;
+            }
 
             $this->info(sprintf(
                 'Sent report for %s with %d winner ad%s.',
