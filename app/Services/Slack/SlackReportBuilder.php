@@ -115,7 +115,7 @@ class SlackReportBuilder
             'elements' => [
                 [
                     'type' => 'mrkdwn',
-                    'text' => 'Coredrive Assistant V1',
+                    'text' => '_Coredrive Assistant V1_',
                 ],
             ],
         ];
