@@ -23,6 +23,11 @@ class MetaWinnerAdService
             ->where('phase', CampaignPhase::Phase2->value)
             ->pluck('campaign_id')
             ->all();
+        $scalingCampaignIds = $brand->campaigns()
+            ->where('advertising_platform', AdvertisingPlatform::Meta->value)
+            ->where('phase', CampaignPhase::Phase4->value)
+            ->pluck('campaign_id')
+            ->all();
 
         if ($testingCampaignIds === []) {
             return collect();
@@ -94,29 +99,63 @@ class MetaWinnerAdService
             return $winnerAds;
         }
 
-        $thumbnailUrls = $this->fetchThumbnailUrls($winnerAds->pluck('ad_id')->all());
+        $adDetails = $this->fetchAdDetails($winnerAds->pluck('ad_id')->all());
+        $scaledCreativeIds = $this->fetchScaledCreativeIds($brand, $scalingCampaignIds);
 
         return $winnerAds
             ->map(fn (array $winnerAd): array => [
                 ...$winnerAd,
-                'thumbnail_url' => $thumbnailUrls[$winnerAd['ad_id']] ?? null,
+                'creative_id' => $adDetails[$winnerAd['ad_id']]['creative_id'] ?? null,
+                'thumbnail_url' => $adDetails[$winnerAd['ad_id']]['thumbnail_url'] ?? null,
             ])
+            ->reject(fn (array $winnerAd): bool => in_array($winnerAd['creative_id'], $scaledCreativeIds, true))
             ->sortByDesc('spend')
             ->values();
     }
 
-    protected function fetchThumbnailUrls(array $adIds): array
+    protected function fetchAdDetails(array $adIds): array
     {
         $response = $this->metaGraphClient->get('', [
             'ids' => implode(',', $adIds),
-            'fields' => 'creative{thumbnail_url}',
+            'fields' => 'creative{id,thumbnail_url}',
         ]);
 
         return collect($response)
             ->mapWithKeys(fn (array $ad, string $adId): array => [
-                $adId => data_get($ad, 'creative.thumbnail_url'),
+                $adId => [[
+                    'creative_id' => data_get($ad, 'creative.id'),
+                    'thumbnail_url' => data_get($ad, 'creative.thumbnail_url'),
+                ]],
             ])
-            ->filter()
+            ->all();
+    }
+
+    protected function fetchScaledCreativeIds(Brand $brand, array $scalingCampaignIds): array
+    {
+        if ($scalingCampaignIds === []) {
+            return [];
+        }
+
+        $response = $this->metaGraphClient->get(
+            sprintf('act_%s/ads', $brand->meta_ad_account_id),
+            [
+                'fields' => 'id,creative{id}',
+                'filtering' => json_encode([
+                    [
+                        'field' => 'campaign.id',
+                        'operator' => 'IN',
+                        'value' => $scalingCampaignIds,
+                    ],
+                ], JSON_THROW_ON_ERROR),
+                'limit' => 500,
+            ],
+        );
+
+        return collect($response['data'] ?? [])
+            ->pluck('creative.id')
+            ->filter(fn (mixed $creativeId): bool => is_string($creativeId) && $creativeId !== '')
+            ->unique()
+            ->values()
             ->all();
     }
 
