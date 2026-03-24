@@ -1,0 +1,107 @@
+html,
+body {
+    box-sizing: border-box;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+body {
+    background-color: #fff;
+    color: #000;
+    font-family:
+        "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+        "Noto Color Emoji";
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+header,
+main,
+footer {
+    box-sizing: border-box;
+    display: block;
+    position: relative;
+}
+
+header {
+    background: red;
+    height: 50px;
+    box-shadow: 0 1px 0 #000;
+    z-index: 2;
+}
+
+header aside {
+    background: yellow;
+    box-sizing: border-box;
+    height: calc(100% - 70px);
+    padding: 0;
+    position: absolute;
+    top: 50px;
+    transform: translate(-250px, 0);
+    transition: transform 0.1s ease;
+    width: 250px;
+    box-shadow: -1px 0 0 #000;
+}
+
+header input[type="checkbox"]:checked ~ aside {
+    transform: translate3d(0, 0, 0);
+}
+
+main {
+    background: green;
+    height: calc(100% - 70px);
+    margin: 0;
+    overflow: scroll;
+    padding: 20px;
+    width: 100%;
+    z-index: 1;
+}
+
+footer {
+    background: #fff;
+    box-shadow: 0 -1px 0 #000;
+    font-size: 9px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    z-index: 2;
+}
+
+@media (min-width: 750px) {
+    main {
+        margin: 0 0 0 250px;
+        width: calc(100% - 250px);
+    }
+
+    header aside {
+        transform: none;
+    }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+    margin: 0;
+    padding: 0;
+}
+
+ol,
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+aside section {
+    background: #fff;
+    padding: 10px;
+    margin: 10px;
+}

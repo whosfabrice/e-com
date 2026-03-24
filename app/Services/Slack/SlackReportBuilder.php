@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Services\Slack;
+
+use App\Enums\AdvertisingPlatform;
+use App\Enums\CampaignPhase;
+use App\Enums\TargetMetric;
+use App\Models\Brand;
+use Illuminate\Support\Collection;
+
+class SlackReportBuilder
+{
+    public function build(Brand $brand, Collection $winnerAds): array
+    {
+        $testingCampaignNames = $brand->campaigns()
+            ->where('advertising_platform', AdvertisingPlatform::Meta->value)
+            ->where('phase', CampaignPhase::Phase2->value)
+            ->pluck('name')
+            ->implode(', ');
+
+        $targetCpa = $brand->targets()
+            ->where('platform', AdvertisingPlatform::Meta->value)
+            ->where('metric', TargetMetric::Cpa->value)
+            ->value('value');
+
+        $blocks = [
+            [
+                'type' => 'header',
+                'text' => [
+                    'type' => 'plain_text',
+                    'emoji' => true,
+                    'text' => sprintf('%s Media Buying Summary', $brand->name),
+                ],
+            ],
+            [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => sprintf(
+                            '%d winning ad%s identified in %s, that meet the Meta CPA target of %s and have not been added to a scaling campaign yet.',
+                            $winnerAds->count(),
+                            $winnerAds->count() === 1 ? '' : 's',
+                            $testingCampaignNames ?: 'the configured testing campaign',
+                            $this->formatEuro((float) $targetCpa),
+                        ),
+                    ],
+                ],
+            ],
+        ];
+
+        foreach ($winnerAds as $winnerAd) {
+            $blocks[] = ['type' => 'divider'];
+            $blocks[] = [
+                'type' => 'section',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => implode("\n", [
+                        sprintf('*<%s|%s>*', $winnerAd['ad_link'], $winnerAd['ad_name']),
+                        sprintf('• Spend: %s', $this->formatEuro((float) $winnerAd['spend'])),
+                        sprintf('• Purchases: %d', (int) $winnerAd['purchases']),
+                        sprintf('• CPA: %s', $this->formatEuro((float) $winnerAd['cpa'])),
+                    ]),
+                ],
+                'accessory' => [
+                    'type' => 'image',
+                    'image_url' => $winnerAd['thumbnail_url'] ?: 'https://api.slack.com/img/blocks/bkb_template_images/notifications.png',
+                    'alt_text' => $winnerAd['ad_name'] ?: 'ad thumbnail',
+                ],
+            ];
+            $blocks[] = [
+                'type' => 'actions',
+                'block_id' => 'winner_'.$winnerAd['ad_id'],
+                'elements' => [
+                    [
+                        'type' => 'button',
+                        'action_id' => 'open_scale_modal',
+                        'text' => [
+                            'type' => 'plain_text',
+                            'emoji' => true,
+                            'text' => 'Add to Scaling Campaign',
+                        ],
+                        'value' => json_encode([
+                            'brand_id' => $brand->id,
+                            'ad_id' => $winnerAd['ad_id'],
+                        ], JSON_THROW_ON_ERROR),
+                    ],
+                ],
+            ];
+        }
+
+        return [
+            'text' => sprintf('%s Media Buyer', $brand->name),
+            'blocks' => $blocks,
+        ];
+    }
+
+    protected function formatEuro(float $value): string
+    {
+        return number_format($value, 2, ',', '.').'€';
+    }
+}
