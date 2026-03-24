@@ -3,7 +3,6 @@
 namespace App\Jobs;
 
 use App\Models\Brand;
-use App\Models\Campaign;
 use App\Services\Meta\MetaAdDuplicator;
 use App\Services\Slack\SlackApiClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,6 +22,7 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
         public string $campaignName,
         public ?string $channelId = null,
         public ?string $threadTs = null,
+        public ?string $commentTs = null,
     ) {
     }
 
@@ -47,10 +47,11 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
 
         $createdAdId = is_string($result['id'] ?? null) ? $result['id'] : null;
 
-        $this->postThreadReply(
+        $this->updateThreadReply(
             $slackApiClient,
             sprintf(
-                '%s has been duplicated into <%s|%s>.%s',
+                'Added <%s|%s> to <%s|%s>.%s',
+                $this->adUrl($brand, $createdAdId ?? $this->adId),
                 $this->adDisplayName(),
                 $this->campaignUrl($brand),
                 $this->campaignName,
@@ -71,14 +72,14 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
     {
         $brand = Brand::query()->find($this->brandId);
 
-        if ($brand === null || $this->channelId === null || $this->threadTs === null) {
+        if ($brand === null || $this->channelId === null || $this->commentTs === null) {
             return;
         }
 
-        app(SlackApiClient::class)->postMessage($this->channelId, [
-            'thread_ts' => $this->threadTs,
+        app(SlackApiClient::class)->updateMessage($this->channelId, $this->commentTs, [
             'text' => sprintf(
-                'Failed to duplicate %s into <%s|%s>: %s',
+                'Failed to add <%s|%s> to <%s|%s>: %s',
+                $this->adUrl($brand, $this->adId),
                 $this->adDisplayName(),
                 $this->campaignUrl($brand),
                 $this->campaignName,
@@ -87,14 +88,13 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
         ]);
     }
 
-    protected function postThreadReply(SlackApiClient $slackApiClient, string $text): void
+    protected function updateThreadReply(SlackApiClient $slackApiClient, string $text): void
     {
-        if ($this->channelId === null || $this->threadTs === null) {
+        if ($this->channelId === null || $this->commentTs === null) {
             return;
         }
 
-        $slackApiClient->postMessage($this->channelId, [
-            'thread_ts' => $this->threadTs,
+        $slackApiClient->updateMessage($this->channelId, $this->commentTs, [
             'text' => $text,
         ]);
     }
@@ -111,5 +111,14 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
     protected function adDisplayName(): string
     {
         return $this->adName !== '' ? $this->adName : "Ad {$this->adId}";
+    }
+
+    protected function adUrl(Brand $brand, string $adId): string
+    {
+        return sprintf(
+            'https://www.facebook.com/adsmanager/manage/ads?act=%s&selected_ad_ids=%s',
+            $brand->meta_ad_account_id,
+            $adId,
+        );
     }
 }

@@ -28,6 +28,15 @@ class SlackApiClient
         ]);
     }
 
+    public function updateMessage(string $channelId, string $ts, array $message): array
+    {
+        return $this->request('chat.update', [
+            'channel' => $channelId,
+            'ts' => $ts,
+            ...$message,
+        ]);
+    }
+
     protected function request(string $endpoint, array $payload): array
     {
         $botToken = config('services.slack.bot_token');

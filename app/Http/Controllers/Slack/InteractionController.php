@@ -68,6 +68,27 @@ class InteractionController extends Controller
                         ->where('campaign_id', $campaignId)
                         ->firstOrFail();
 
+                    $commentTs = null;
+
+                    if ($channelId !== null && $threadTs !== null) {
+                        $comment = $slackApiClient->postMessage($channelId, [
+                            'thread_ts' => $threadTs,
+                            'text' => sprintf(
+                                'Adding <%s|%s> to <%s|%s>.',
+                                sprintf(
+                                    'https://www.facebook.com/adsmanager/manage/ads?act=%s&selected_ad_ids=%s',
+                                    $brand->meta_ad_account_id,
+                                    $adId,
+                                ),
+                                $adName !== '' ? $adName : "Ad {$adId}",
+                                $campaign->metaAdsManagerUrl(),
+                                $campaign->name,
+                            ),
+                        ]);
+
+                        $commentTs = is_string($comment['ts'] ?? null) ? $comment['ts'] : null;
+                    }
+
                     DuplicateMetaAdToCampaign::dispatch(
                         $brand->id,
                         $adId,
@@ -76,18 +97,8 @@ class InteractionController extends Controller
                         $campaign->name,
                         $channelId,
                         $threadTs,
+                        $commentTs,
                     );
-
-                    if ($channelId !== null && $threadTs !== null) {
-                        $slackApiClient->postMessage($channelId, [
-                            'thread_ts' => $threadTs,
-                            'text' => sprintf(
-                                '%s is being duplicated into %s.',
-                                $adName !== '' ? $adName : "Ad {$adId}",
-                                $campaign->name,
-                            ),
-                        ]);
-                    }
 
                     return response()->json([
                         'response_action' => 'clear',
