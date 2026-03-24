@@ -33,26 +33,20 @@ class SlackReportBuilder
                 ],
             ],
             [
-                'type' => 'context',
-                'elements' => [
-                    [
-                        'type' => 'mrkdwn',
-                        'text' => sprintf(
-                            '%d winning ad%s identified in %s, that meet the Meta CPA target of %s and have not been added to a scaling campaign yet.',
-                            $winnerAds->count(),
-                            $winnerAds->count() === 1 ? '' : 's',
-                            $testingCampaignNames ?: 'the configured testing campaign',
-                            $this->formatEuro((float) $targetCpa),
-                        ),
-                    ],
-                ],
-            ],
-            [
                 'type' => 'header',
                 'text' => [
                     'type' => 'plain_text',
                     'emoji' => true,
                     'text' => 'Creative Testing Winners',
+                ],
+            ],
+                        [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => "Identified {$winnerAds->count()} winner creative".($winnerAds->count() === 1 ? '' : 's').' in testing, that have not been added to a scaling campaign yet.',
+                    ],
                 ],
             ],
         ];
