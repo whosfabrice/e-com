@@ -69,6 +69,6 @@ class SlackModalBuilder
 
     protected function slackPlainText(string $text, int $limit): string
     {
-        return Str::limit($text, $limit, '...');
+        return Str::limit($text, $limit - 3, '...');
     }
 }
