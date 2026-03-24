@@ -14,7 +14,7 @@ class Brand extends Model
         'name',
         'handle',
         'meta_ad_account_id',
-        'slack_channel_webhook_url',
+        'slack_channel_id',
     ];
 
     public function campaigns(): HasMany

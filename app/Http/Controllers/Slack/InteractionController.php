@@ -11,7 +11,6 @@ use App\Services\Slack\SlackModalBuilder;
 use App\Services\Slack\SlackSignatureVerifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class InteractionController extends Controller
@@ -23,27 +22,14 @@ class InteractionController extends Controller
         SlackModalBuilder $slackModalBuilder,
         SlackSignatureVerifier $slackSignatureVerifier,
     ): JsonResponse {
-        Log::info('Slack interaction received.', [
-            'headers' => $request->headers->all(),
-            'raw_body' => $request->getContent(),
-        ]);
-
         if (! $slackSignatureVerifier->isValid($request)) {
-            Log::warning('Slack interaction rejected due to invalid signature.');
-
             abort(Response::HTTP_UNAUTHORIZED);
         }
 
         try {
             $payload = $slackInteractionPayload->fromRequest($request);
 
-            Log::info('Slack interaction payload parsed.', [
-                'payload' => $payload,
-            ]);
-
             if ($slackInteractionPayload->isOpenScaleModalAction($payload)) {
-                Log::info('Opening scale modal for Slack interaction.');
-
                 $brand = Brand::query()->findOrFail($slackInteractionPayload->brandId($payload));
 
                 $slackApiClient->openView(
@@ -58,16 +44,12 @@ class InteractionController extends Controller
             }
 
             if ($slackInteractionPayload->isScaleModalSubmission($payload)) {
-                Log::info('Handling scale modal submission.');
-
                 try {
                     $brand = Brand::query()->findOrFail($slackInteractionPayload->brandId($payload));
                     $adId = $slackInteractionPayload->adId($payload);
                     $campaignId = $slackInteractionPayload->selectedCampaignId($payload);
 
                     if ($campaignId === null) {
-                        Log::warning('Scale modal submission missing campaign selection.');
-
                         return response()->json([
                             'response_action' => 'errors',
                             'errors' => [
@@ -82,21 +64,10 @@ class InteractionController extends Controller
                         $campaignId,
                     );
 
-                    Log::info('Ad duplication queued successfully.', [
-                        'brand_id' => $brand->id,
-                        'campaign_id' => $campaignId,
-                        'ad_id' => $adId,
-                    ]);
-
                     return response()->json([
                         'response_action' => 'clear',
                     ]);
                 } catch (\Throwable $throwable) {
-                    Log::error('Scale modal submission failed.', [
-                        'message' => $throwable->getMessage(),
-                        'trace' => $throwable->getTraceAsString(),
-                    ]);
-
                     return response()->json([
                         'response_action' => 'errors',
                         'errors' => [
@@ -106,15 +77,8 @@ class InteractionController extends Controller
                 }
             }
 
-            Log::info('Slack interaction did not match a known handler.');
-
             return response()->json(['ok' => true]);
         } catch (\Throwable $throwable) {
-            Log::error('Slack interaction crashed before completion.', [
-                'message' => $throwable->getMessage(),
-                'trace' => $throwable->getTraceAsString(),
-            ]);
-
             throw $throwable;
         }
     }

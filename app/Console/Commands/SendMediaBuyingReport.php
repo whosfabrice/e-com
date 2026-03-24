@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\Brand;
 use App\Services\Meta\MetaWinnerAdService;
+use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackReportBuilder;
-use App\Services\Slack\SlackWebhookClient;
 use Illuminate\Console\Command;
 
 class SendMediaBuyingReport extends Command
@@ -17,7 +17,7 @@ class SendMediaBuyingReport extends Command
     public function handle(
         MetaWinnerAdService $metaWinnerAdService,
         SlackReportBuilder $slackReportBuilder,
-        SlackWebhookClient $slackWebhookClient,
+        SlackApiClient $slackApiClient,
     ): int
     {
         $brandHandle = $this->argument('brand');
@@ -34,8 +34,8 @@ class SendMediaBuyingReport extends Command
                 continue;
             }
 
-            $slackWebhookClient->send(
-                $brand->slack_channel_webhook_url,
+            $slackApiClient->postMessage(
+                $brand->slack_channel_id,
                 $slackReportBuilder->build($brand, $winnerAds),
             );
 

@@ -20,6 +20,14 @@ class SlackApiClient
         ]);
     }
 
+    public function postMessage(string $channelId, array $message): array
+    {
+        return $this->request('chat.postMessage', [
+            'channel' => $channelId,
+            ...$message,
+        ]);
+    }
+
     protected function request(string $endpoint, array $payload): array
     {
         $botToken = config('services.slack.bot_token');

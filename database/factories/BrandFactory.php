@@ -24,7 +24,7 @@ class BrandFactory extends Factory
             'name' => $name,
             'handle' => Str::slug($name),
             'meta_ad_account_id' => fake()->numerify('################'),
-            'slack_channel_webhook_url' => fake()->url(),
+            'slack_channel_id' => fake()->regexify('C[0-9A-Z]{10}'),
         ];
     }
 }
