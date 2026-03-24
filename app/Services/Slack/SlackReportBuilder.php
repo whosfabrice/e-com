@@ -35,14 +35,12 @@ class SlackReportBuilder
                 ],
             ],
             [
-                'type' => 'context',
-                'elements' => [
-                    [
-                        'type' => 'mrkdwn',
-                        'text' => $winnerAds->isEmpty()
-                            ? "No winning creatives in testing that haven't been added to a scaling campaign."
-                            : 'Identified '.$winnerAds->count().' winner creative'.($winnerAds->count() === 1 ? '' : 's').' in testing, that have not been added to a scaling campaign yet.',
-                    ],
+                'type' => 'section',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => $winnerAds->isEmpty()
+                        ? "No winning creatives in testing that haven't been added to a scaling campaign."
+                        : 'Identified '.$winnerAds->count().' creative testing winner'.($winnerAds->count() === 1 ? '' : 's').' that should be added to a scaling campaign.',
                 ],
             ],
         ];
