@@ -83,8 +83,9 @@ class SlackReportBuilder
                         'options' => $brand->campaigns()
                             ->where('advertising_platform', AdvertisingPlatform::Meta->value)
                             ->where('phase', CampaignPhase::Phase4->value)
-                            ->sortBy('name')
+                            ->orderBy('name')
                             ->take(100)
+                            ->get()
                             ->map(fn ($campaign): array => [
                                 'text' => [
                                     'type' => 'plain_text',
