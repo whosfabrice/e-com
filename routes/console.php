@@ -9,4 +9,7 @@ Schedule::command('queue:work --stop-when-empty --tries=3')
     ->everyMinute()
     ->withoutOverlapping();
 
-// Schedule::command(SendMediaBuyingReport::class)->dailyAt('09:00');
+Schedule::command(SendMediaBuyingReport::class)
+    ->weekdays()
+    ->at('08:00')
+    ->timezone('Europe/Berlin');

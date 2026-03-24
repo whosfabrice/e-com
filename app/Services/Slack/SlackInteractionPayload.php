@@ -92,6 +92,16 @@ class SlackInteractionPayload
         return is_string($value) && $value !== '' ? $value : null;
     }
 
+    public function selectedCampaignName(array $payload): ?string
+    {
+        $text = data_get($payload, sprintf(
+            'state.values.winner_%s.campaign_select.selected_option.text.text',
+            $this->adId($payload),
+        ));
+
+        return is_string($text) && $text !== '' ? $text : null;
+    }
+
     protected function metadata(array $payload): array
     {
         return json_decode(

@@ -39,10 +39,11 @@ class InteractionController extends Controller
                     $adId = $slackInteractionPayload->adId($payload);
                     $adName = $slackInteractionPayload->adName($payload);
                     $campaignId = $slackInteractionPayload->selectedCampaignId($payload);
+                    $campaignName = $slackInteractionPayload->selectedCampaignName($payload);
                     $channelId = $slackInteractionPayload->channelId($payload);
                     $messageTs = $slackInteractionPayload->threadTs($payload);
 
-                    if ($campaignId === null) {
+                    if ($campaignId === null || $campaignName === null) {
                         return response()->json([
                             'response_action' => 'errors',
                             'errors' => [
@@ -50,10 +51,6 @@ class InteractionController extends Controller
                             ],
                         ]);
                     }
-
-                    $campaign = $brand->campaigns()
-                        ->where('campaign_id', $campaignId)
-                        ->firstOrFail();
 
                     if ($channelId !== null && $messageTs !== null) {
                         $message = $slackApiClient->fetchMessage($channelId, $messageTs);
@@ -66,7 +63,7 @@ class InteractionController extends Controller
                                 $adId,
                                 sprintf(
                                     ':hourglass_flowing_sand: Duplicating into %s',
-                                    $campaign->name,
+                                    $campaignName,
                                 ),
                             ),
                         );
@@ -77,7 +74,7 @@ class InteractionController extends Controller
                         $adId,
                         $campaignId,
                         $adName,
-                        $campaign->name,
+                        $campaignName,
                         $channelId,
                         $messageTs,
                     );

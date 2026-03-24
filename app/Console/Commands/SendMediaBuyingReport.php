@@ -34,11 +34,14 @@ class SendMediaBuyingReport extends Command
                     continue;
                 }
 
-                $winnerAds = $metaWinnerAdService->forBrand($brand);
+                $reportData = $metaWinnerAdService->reportDataForBrand($brand);
+                $winnerAds = $reportData['winner_ads'];
+                $fetchedAds = $reportData['fetched_ads'];
+                $scalingCampaigns = $reportData['scaling_campaigns'];
 
                 $slackApiClient->postMessage(
                     $brand->slack_channel_id,
-                    $slackReportBuilder->build($brand, $winnerAds),
+                    $slackReportBuilder->build($brand, $winnerAds, $fetchedAds, $scalingCampaigns),
                 );
 
                 if ($winnerAds->isEmpty()) {
