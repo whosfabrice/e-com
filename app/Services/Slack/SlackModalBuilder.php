@@ -5,6 +5,7 @@ namespace App\Services\Slack;
 use App\Enums\AdvertisingPlatform;
 use App\Enums\CampaignPhase;
 use App\Models\Brand;
+use Illuminate\Support\Str;
 
 class SlackModalBuilder
 {
@@ -54,7 +55,7 @@ class SlackModalBuilder
                                 'text' => [
                                     'type' => 'plain_text',
                                     'emoji' => true,
-                                    'text' => $campaign->name,
+                                    'text' => $this->slackPlainText($campaign->name, 75),
                                 ],
                                 'value' => $campaign->campaign_id,
                             ])
@@ -64,5 +65,10 @@ class SlackModalBuilder
                 ],
             ],
         ];
+    }
+
+    protected function slackPlainText(string $text, int $limit): string
+    {
+        return Str::limit($text, $limit, '...');
     }
 }

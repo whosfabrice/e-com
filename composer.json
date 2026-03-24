@@ -69,6 +69,9 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "push": [
+            "npm run build && git add . && git commit && git push"
         ]
     },
     "extra": {

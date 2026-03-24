@@ -3,6 +3,7 @@
 namespace App\Services\Slack;
 
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class SlackApiClient
@@ -38,7 +39,19 @@ class SlackApiClient
             ->json();
 
         if (($response['ok'] ?? false) !== true) {
-            throw new RuntimeException('Slack API error: '.($response['error'] ?? 'unknown_error'));
+            Log::error('Slack API request failed.', [
+                'endpoint' => $endpoint,
+                'payload' => $payload,
+                'response' => $response,
+            ]);
+
+            $details = data_get($response, 'response_metadata.messages');
+
+            throw new RuntimeException(sprintf(
+                'Slack API error: %s%s',
+                $response['error'] ?? 'unknown_error',
+                is_array($details) && $details !== [] ? ' | '.implode(' ', $details) : '',
+            ));
         }
 
         return $response;
