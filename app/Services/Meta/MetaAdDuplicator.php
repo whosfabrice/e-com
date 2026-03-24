@@ -24,15 +24,21 @@ class MetaAdDuplicator
             throw new RuntimeException(sprintf('Source ad %s has no reusable creative.', $adId));
         }
 
-        return $this->metaGraphClient->post(
+        $createdAd = $this->metaGraphClient->post(
             sprintf('act_%s/ads', $brand->meta_ad_account_id),
             [
-                'name' => sprintf('%s | Scaled', $sourceAd['name'] ?? "Ad {$adId}"),
+                'name' => (string) ($sourceAd['name'] ?? "Ad {$adId}"),
                 'adset_id' => $targetAdSet['id'],
                 'creative' => json_encode(['creative_id' => $creativeId], JSON_THROW_ON_ERROR),
                 'status' => 'PAUSED',
             ],
         );
+
+        return [
+            ...$createdAd,
+            'campaign_id' => $campaignId,
+            'adset_id' => $targetAdSet['id'],
+        ];
     }
 
     protected function getTargetAdSet(Brand $brand, string $campaignId): array

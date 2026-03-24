@@ -47,13 +47,14 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
         );
 
         $createdAdId = is_string($result['id'] ?? null) ? $result['id'] : null;
+        $createdAdSetId = is_string($result['adset_id'] ?? null) ? $result['adset_id'] : null;
 
         $this->updateReportMessage(
             $slackApiClient,
             $slackReportBuilder,
             sprintf(
                 ':white_check_mark: Added to <%s|%s>',
-                $this->adUrl($brand, $createdAdId ?? $this->adId),
+                $this->adUrl($brand, $createdAdId ?? $this->adId, $createdAdSetId),
                 $this->campaignName,
             ),
         );
@@ -121,12 +122,21 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
         return $this->adName !== '' ? $this->adName : "Ad {$this->adId}";
     }
 
-    protected function adUrl(Brand $brand, string $adId): string
+    protected function adUrl(Brand $brand, string $adId, ?string $adSetId = null): string
     {
+        $query = [
+            'act' => $brand->meta_ad_account_id,
+            'selected_campaign_ids' => $this->campaignId,
+            'selected_ad_ids' => $adId,
+        ];
+
+        if ($adSetId !== null && $adSetId !== '') {
+            $query['selected_adset_ids'] = $adSetId;
+        }
+
         return sprintf(
-            'https://www.facebook.com/adsmanager/manage/ads?act=%s&selected_ad_ids=%s',
-            $brand->meta_ad_account_id,
-            $adId,
+            'https://www.facebook.com/adsmanager/manage/ads?%s',
+            http_build_query($query),
         );
     }
 }
