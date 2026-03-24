@@ -9,7 +9,13 @@ use Illuminate\Support\Str;
 
 class SlackModalBuilder
 {
-    public function buildScaleCampaignModal(Brand $brand, string $adId): array
+    public function buildScaleCampaignModal(
+        Brand $brand,
+        string $adId,
+        string $adName,
+        ?string $channelId,
+        ?string $threadTs,
+    ): array
     {
         return [
             'type' => 'modal',
@@ -17,6 +23,9 @@ class SlackModalBuilder
             'private_metadata' => json_encode([
                 'brand_id' => $brand->id,
                 'ad_id' => $adId,
+                'ad_name' => $adName,
+                'channel_id' => $channelId,
+                'thread_ts' => $threadTs,
             ], JSON_THROW_ON_ERROR),
             'title' => [
                 'type' => 'plain_text',

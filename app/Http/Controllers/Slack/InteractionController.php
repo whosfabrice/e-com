@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Slack;
 use App\Http\Controllers\Controller;
 use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Models\Brand;
+use App\Models\Campaign;
 use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackInteractionPayload;
 use App\Services\Slack\SlackModalBuilder;
@@ -37,6 +38,9 @@ class InteractionController extends Controller
                     $slackModalBuilder->buildScaleCampaignModal(
                         $brand,
                         $slackInteractionPayload->adId($payload),
+                        $slackInteractionPayload->adName($payload),
+                        $slackInteractionPayload->channelId($payload),
+                        $slackInteractionPayload->threadTs($payload),
                     ),
                 );
 
@@ -47,7 +51,10 @@ class InteractionController extends Controller
                 try {
                     $brand = Brand::query()->findOrFail($slackInteractionPayload->brandId($payload));
                     $adId = $slackInteractionPayload->adId($payload);
+                    $adName = $slackInteractionPayload->adName($payload);
                     $campaignId = $slackInteractionPayload->selectedCampaignId($payload);
+                    $channelId = $slackInteractionPayload->channelId($payload);
+                    $threadTs = $slackInteractionPayload->threadTs($payload);
 
                     if ($campaignId === null) {
                         return response()->json([
@@ -58,11 +65,27 @@ class InteractionController extends Controller
                         ]);
                     }
 
+                    $campaign = Campaign::query()
+                        ->where('brand_id', $brand->id)
+                        ->where('campaign_id', $campaignId)
+                        ->firstOrFail();
+
                     DuplicateMetaAdToCampaign::dispatch(
                         $brand->id,
                         $adId,
                         $campaignId,
                     );
+
+                    if ($channelId !== null && $threadTs !== null) {
+                        $slackApiClient->postMessage($channelId, [
+                            'thread_ts' => $threadTs,
+                            'text' => sprintf(
+                                '%s is being duplicated into %s.',
+                                $adName !== '' ? $adName : "Ad {$adId}",
+                                $campaign->name,
+                            ),
+                        ]);
+                    }
 
                     return response()->json([
                         'response_action' => 'clear',

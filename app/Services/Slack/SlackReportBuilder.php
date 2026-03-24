@@ -83,6 +83,7 @@ class SlackReportBuilder
                         'value' => json_encode([
                             'brand_id' => $brand->id,
                             'ad_id' => $winnerAd['ad_id'],
+                            'ad_name' => $winnerAd['ad_name'],
                         ], JSON_THROW_ON_ERROR),
                     ],
                 ],

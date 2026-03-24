@@ -51,6 +51,37 @@ class SlackInteractionPayload
         return (string) ($metadata['ad_id'] ?? '');
     }
 
+    public function adName(array $payload): string
+    {
+        $metadata = $this->metadata($payload);
+
+        return (string) ($metadata['ad_name'] ?? '');
+    }
+
+    public function channelId(array $payload): ?string
+    {
+        $channelId = data_get($payload, 'channel.id');
+
+        if (! is_string($channelId) || $channelId === '') {
+            $metadata = $this->metadata($payload);
+            $channelId = $metadata['channel_id'] ?? null;
+        }
+
+        return is_string($channelId) && $channelId !== '' ? $channelId : null;
+    }
+
+    public function threadTs(array $payload): ?string
+    {
+        $threadTs = data_get($payload, 'container.message_ts');
+
+        if (! is_string($threadTs) || $threadTs === '') {
+            $metadata = $this->metadata($payload);
+            $threadTs = $metadata['thread_ts'] ?? null;
+        }
+
+        return is_string($threadTs) && $threadTs !== '' ? $threadTs : null;
+    }
+
     public function selectedCampaignId(array $payload): ?string
     {
         $value = data_get(
