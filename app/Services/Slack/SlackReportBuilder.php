@@ -29,7 +29,7 @@ class SlackReportBuilder
                 'text' => [
                     'type' => 'plain_text',
                     'emoji' => true,
-                    'text' => sprintf('%s Media Buying Summary', $brand->name),
+                    'text' => "{$brand->name} Daily Media Buying Report",
                 ],
             ],
             [
