@@ -27,24 +27,34 @@ class SendMediaBuyingReport extends Command
             : Brand::query()->get();
 
         foreach ($brands as $brand) {
-            $winnerAds = $metaWinnerAdService->forBrand($brand);
+            try {
+                if (! is_string($brand->slack_channel_id) || $brand->slack_channel_id === '') {
+                    $this->warn(sprintf('Skipped %s: missing slack_channel_id.', $brand->name));
 
-            $slackApiClient->postMessage(
-                $brand->slack_channel_id,
-                $slackReportBuilder->build($brand, $winnerAds),
-            );
+                    continue;
+                }
 
-            if ($winnerAds->isEmpty()) {
-                $this->info(sprintf('Sent empty-state report for %s.', $brand->name));
-                continue;
+                $winnerAds = $metaWinnerAdService->forBrand($brand);
+
+                $slackApiClient->postMessage(
+                    $brand->slack_channel_id,
+                    $slackReportBuilder->build($brand, $winnerAds),
+                );
+
+                if ($winnerAds->isEmpty()) {
+                    $this->info(sprintf('Sent empty-state report for %s.', $brand->name));
+                    continue;
+                }
+
+                $this->info(sprintf(
+                    'Sent report for %s with %d winner ad%s.',
+                    $brand->name,
+                    $winnerAds->count(),
+                    $winnerAds->count() === 1 ? '' : 's',
+                ));
+            } catch (\Throwable $throwable) {
+                $this->error(sprintf('Failed for %s: %s', $brand->name, $throwable->getMessage()));
             }
-
-            $this->info(sprintf(
-                'Sent report for %s with %d winner ad%s.',
-                $brand->name,
-                $winnerAds->count(),
-                $winnerAds->count() === 1 ? '' : 's',
-            ));
         }
 
         return self::SUCCESS;
