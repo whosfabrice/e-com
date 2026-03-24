@@ -7,7 +7,6 @@ use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Models\Brand;
 use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackInteractionPayload;
-use App\Services\Slack\SlackModalBuilder;
 use App\Services\Slack\SlackReportBuilder;
 use App\Services\Slack\SlackSignatureVerifier;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +19,6 @@ class InteractionController extends Controller
         Request $request,
         SlackApiClient $slackApiClient,
         SlackInteractionPayload $slackInteractionPayload,
-        SlackModalBuilder $slackModalBuilder,
         SlackReportBuilder $slackReportBuilder,
         SlackSignatureVerifier $slackSignatureVerifier,
     ): JsonResponse {
@@ -31,24 +29,11 @@ class InteractionController extends Controller
         try {
             $payload = $slackInteractionPayload->fromRequest($request);
 
-            if ($slackInteractionPayload->isOpenScaleModalAction($payload)) {
-                $brand = Brand::query()->findOrFail($slackInteractionPayload->brandId($payload));
-
-                $slackApiClient->openView(
-                    $slackInteractionPayload->triggerId($payload),
-                    $slackModalBuilder->buildScaleCampaignModal(
-                        $brand,
-                        $slackInteractionPayload->adId($payload),
-                        $slackInteractionPayload->adName($payload),
-                        $slackInteractionPayload->channelId($payload),
-                        $slackInteractionPayload->threadTs($payload),
-                    ),
-                );
-
+            if ($slackInteractionPayload->isCampaignSelectAction($payload)) {
                 return response()->json(['ok' => true]);
             }
 
-            if ($slackInteractionPayload->isScaleModalSubmission($payload)) {
+            if ($slackInteractionPayload->isAddToCampaignAction($payload)) {
                 try {
                     $brand = Brand::query()->findOrFail($slackInteractionPayload->brandId($payload));
                     $adId = $slackInteractionPayload->adId($payload);
@@ -80,8 +65,7 @@ class InteractionController extends Controller
                                 $message,
                                 $adId,
                                 sprintf(
-                                    '⏳ Duplicating into <%s|%s>...',
-                                    $campaign->metaAdsManagerUrl(),
+                                    ':hourglass_flowing_sand: Duplicating into %s',
                                     $campaign->name,
                                 ),
                             ),

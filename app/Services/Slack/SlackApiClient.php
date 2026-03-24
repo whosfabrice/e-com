@@ -12,14 +12,6 @@ class SlackApiClient
     {
     }
 
-    public function openView(string $triggerId, array $view): array
-    {
-        return $this->request('views.open', [
-            'trigger_id' => $triggerId,
-            'view' => $view,
-        ]);
-    }
-
     public function postMessage(string $channelId, array $message): array
     {
         return $this->request('chat.postMessage', [

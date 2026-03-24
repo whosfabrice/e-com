@@ -20,16 +20,16 @@ class SlackInteractionPayload
         return is_array($decodedPayload) ? $decodedPayload : [];
     }
 
-    public function isOpenScaleModalAction(array $payload): bool
+    public function isCampaignSelectAction(array $payload): bool
     {
         return ($payload['type'] ?? null) === 'block_actions'
-            && ($payload['actions'][0]['action_id'] ?? null) === 'open_scale_modal';
+            && ($payload['actions'][0]['action_id'] ?? null) === 'campaign_select';
     }
 
-    public function isScaleModalSubmission(array $payload): bool
+    public function isAddToCampaignAction(array $payload): bool
     {
-        return ($payload['type'] ?? null) === 'view_submission'
-            && ($payload['view']['callback_id'] ?? null) === 'submit_scale_campaign';
+        return ($payload['type'] ?? null) === 'block_actions'
+            && ($payload['actions'][0]['action_id'] ?? null) === 'add_to_campaign';
     }
 
     public function triggerId(array $payload): string
@@ -84,23 +84,16 @@ class SlackInteractionPayload
 
     public function selectedCampaignId(array $payload): ?string
     {
-        $value = data_get(
-            $payload,
-            'view.state.values.scale_campaign.campaign_id.selected_option.value',
-        );
+        $value = data_get($payload, sprintf(
+            'state.values.winner_%s.campaign_select.selected_option.value',
+            $this->adId($payload),
+        ));
 
         return is_string($value) && $value !== '' ? $value : null;
     }
 
     protected function metadata(array $payload): array
     {
-        if (($payload['type'] ?? null) === 'view_submission') {
-            return json_decode(
-                (string) ($payload['view']['private_metadata'] ?? '{}'),
-                true,
-            ) ?: [];
-        }
-
         return json_decode(
             (string) ($payload['actions'][0]['value'] ?? '{}'),
             true,

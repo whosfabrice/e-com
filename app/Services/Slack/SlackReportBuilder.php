@@ -7,6 +7,7 @@ use App\Enums\CampaignPhase;
 use App\Enums\TargetMetric;
 use App\Models\Brand;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class SlackReportBuilder
 {
@@ -73,12 +74,35 @@ class SlackReportBuilder
                 'block_id' => 'winner_'.$winnerAd['ad_id'],
                 'elements' => [
                     [
+                        'type' => 'static_select',
+                        'action_id' => 'campaign_select',
+                        'placeholder' => [
+                            'type' => 'plain_text',
+                            'text' => 'Choose a campaign',
+                        ],
+                        'options' => $brand->campaigns()
+                            ->where('advertising_platform', AdvertisingPlatform::Meta->value)
+                            ->where('phase', CampaignPhase::Phase4->value)
+                            ->sortBy('name')
+                            ->take(100)
+                            ->map(fn ($campaign): array => [
+                                'text' => [
+                                    'type' => 'plain_text',
+                                    'emoji' => true,
+                                    'text' => Str::limit($campaign->name, 72, '...'),
+                                ],
+                                'value' => $campaign->campaign_id,
+                            ])
+                            ->values()
+                            ->all(),
+                    ],
+                    [
                         'type' => 'button',
-                        'action_id' => 'open_scale_modal',
+                        'action_id' => 'add_to_campaign',
                         'text' => [
                             'type' => 'plain_text',
                             'emoji' => true,
-                            'text' => 'Add to Scaling Campaign',
+                            'text' => 'Add',
                         ],
                         'value' => json_encode([
                             'brand_id' => $brand->id,

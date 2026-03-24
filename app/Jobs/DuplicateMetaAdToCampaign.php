@@ -52,12 +52,9 @@ class DuplicateMetaAdToCampaign implements ShouldQueue
             $slackApiClient,
             $slackReportBuilder,
             sprintf(
-                '✅ Added to <%s|%s>. %s',
-                $this->campaignUrl($brand),
+                ':white_check_mark: Added to <%s|%s>',
+                $this->adUrl($brand, $createdAdId ?? $this->adId),
                 $this->campaignName,
-                $createdAdId !== null
-                    ? sprintf('<%s|Open duplicated ad>', $this->adUrl($brand, $createdAdId))
-                    : sprintf('<%s|Open source ad>', $this->adUrl($brand, $this->adId)),
             ),
         );
 
