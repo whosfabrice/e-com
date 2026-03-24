@@ -7,7 +7,6 @@ use App\Enums\CampaignPhase;
 use App\Enums\TargetMetric;
 use App\Models\Brand;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 class SlackReportBuilder
 {
@@ -90,7 +89,7 @@ class SlackReportBuilder
                                 'text' => [
                                     'type' => 'plain_text',
                                     'emoji' => true,
-                                    'text' => Str::limit($campaign->name, 72, '...'),
+                                    'text' => $this->truncateMiddle($campaign->name, 72),
                                 ],
                                 'value' => $campaign->campaign_id,
                             ])
@@ -124,6 +123,21 @@ class SlackReportBuilder
     protected function formatEuro(float $value): string
     {
         return number_format($value, 2, ',', '.').'€';
+    }
+
+    protected function truncateMiddle(string $text, int $maxLength): string
+    {
+        if (mb_strlen($text) <= $maxLength) {
+            return $text;
+        }
+
+        $visibleLength = $maxLength - 3;
+        $startLength = (int) ceil($visibleLength / 2);
+        $endLength = (int) floor($visibleLength / 2);
+
+        return mb_substr($text, 0, $startLength)
+            .'...'
+            .mb_substr($text, -$endLength);
     }
 
     public function withAdStatus(array $message, string $adId, string $statusText): array
