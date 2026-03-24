@@ -122,10 +122,10 @@ class MetaWinnerAdService
 
         return collect($response)
             ->mapWithKeys(fn (array $ad, string $adId): array => [
-                $adId => [[
+                $adId => [
                     'creative_id' => data_get($ad, 'creative.id'),
                     'thumbnail_url' => data_get($ad, 'creative.thumbnail_url'),
-                ]],
+                ],
             ])
             ->all();
     }
