@@ -13,15 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('targets', function (Blueprint $table): void {
-            $table->dropUnique(['brand_id', 'platform', 'metric']);
-        });
-
-        Schema::table('targets', function (Blueprint $table): void {
             $table->enum('metric', ['cpa', 'purchases'])->change();
-        });
-
-        Schema::table('targets', function (Blueprint $table): void {
-            $table->unique(['brand_id', 'platform', 'metric']);
         });
     }
 
@@ -30,18 +22,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('targets', function (Blueprint $table): void {
-            $table->dropUnique(['brand_id', 'platform', 'metric']);
-        });
-
         DB::table('targets')->where('metric', 'purchases')->delete();
 
         Schema::table('targets', function (Blueprint $table): void {
             $table->enum('metric', ['cpa'])->change();
-        });
-
-        Schema::table('targets', function (Blueprint $table): void {
-            $table->unique(['brand_id', 'platform', 'metric']);
         });
     }
 };
