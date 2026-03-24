@@ -50,6 +50,23 @@ class SlackReportBuilder
         ];
 
         foreach ($winnerAds as $winnerAd) {
+            $campaignOptions = $brand->campaigns()
+                ->where('advertising_platform', AdvertisingPlatform::Meta->value)
+                ->where('phase', CampaignPhase::Phase4->value)
+                ->orderBy('name')
+                ->take(100)
+                ->get()
+                ->map(fn ($campaign): array => [
+                    'text' => [
+                        'type' => 'plain_text',
+                        'emoji' => true,
+                        'text' => $this->dropdownCampaignName($campaign->name),
+                    ],
+                    'value' => $campaign->campaign_id,
+                ])
+                ->values()
+                ->all();
+
             $blocks[] = ['type' => 'divider'];
             $blocks[] = [
                 'type' => 'section',
@@ -79,22 +96,8 @@ class SlackReportBuilder
                             'type' => 'plain_text',
                             'text' => 'Choose a campaign',
                         ],
-                        'options' => $brand->campaigns()
-                            ->where('advertising_platform', AdvertisingPlatform::Meta->value)
-                            ->where('phase', CampaignPhase::Phase4->value)
-                            ->orderBy('name')
-                            ->take(100)
-                            ->get()
-                            ->map(fn ($campaign): array => [
-                                'text' => [
-                                    'type' => 'plain_text',
-                                    'emoji' => true,
-                                    'text' => $this->dropdownCampaignName($campaign->name),
-                                ],
-                                'value' => $campaign->campaign_id,
-                            ])
-                            ->values()
-                            ->all(),
+                        'options' => $campaignOptions,
+                        'initial_option' => $campaignOptions[0] ?? null,
                     ],
                     [
                         'type' => 'button',
