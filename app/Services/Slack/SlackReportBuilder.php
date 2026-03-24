@@ -109,6 +109,17 @@ class SlackReportBuilder
             ];
         }
 
+        $blocks[] = ['type' => 'divider'];
+        $blocks[] = [
+            'type' => 'context',
+            'elements' => [
+                [
+                    'type' => 'mrkdwn',
+                    'text' => 'Coredrive Assistant V1',
+                ],
+            ],
+        ];
+
         return [
             'text' => sprintf('%s Media Buyer', $brand->name),
             'blocks' => $blocks,
