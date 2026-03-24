@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Slack;
 use App\Http\Controllers\Controller;
 use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Models\Brand;
-use App\Models\Campaign;
 use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackInteractionPayload;
 use App\Services\Slack\SlackModalBuilder;
@@ -65,8 +64,7 @@ class InteractionController extends Controller
                         ]);
                     }
 
-                    $campaign = Campaign::query()
-                        ->where('brand_id', $brand->id)
+                    $campaign = $brand->campaigns()
                         ->where('campaign_id', $campaignId)
                         ->firstOrFail();
 
@@ -74,6 +72,10 @@ class InteractionController extends Controller
                         $brand->id,
                         $adId,
                         $campaignId,
+                        $adName,
+                        $campaign->name,
+                        $channelId,
+                        $threadTs,
                     );
 
                     if ($channelId !== null && $threadTs !== null) {
