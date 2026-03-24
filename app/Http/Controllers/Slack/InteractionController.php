@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Slack;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Models\Brand;
-use App\Services\Meta\MetaAdDuplicator;
 use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackInteractionPayload;
 use App\Services\Slack\SlackModalBuilder;
@@ -22,7 +22,6 @@ class InteractionController extends Controller
         SlackInteractionPayload $slackInteractionPayload,
         SlackModalBuilder $slackModalBuilder,
         SlackSignatureVerifier $slackSignatureVerifier,
-        MetaAdDuplicator $metaAdDuplicator,
     ): JsonResponse {
         Log::info('Slack interaction received.', [
             'headers' => $request->headers->all(),
@@ -63,6 +62,7 @@ class InteractionController extends Controller
 
                 try {
                     $brand = Brand::query()->findOrFail($slackInteractionPayload->brandId($payload));
+                    $adId = $slackInteractionPayload->adId($payload);
                     $campaignId = $slackInteractionPayload->selectedCampaignId($payload);
 
                     if ($campaignId === null) {
@@ -76,16 +76,16 @@ class InteractionController extends Controller
                         ]);
                     }
 
-                    $metaAdDuplicator->duplicateToCampaign(
-                        $brand,
-                        $slackInteractionPayload->adId($payload),
+                    DuplicateMetaAdToCampaign::dispatch(
+                        $brand->id,
+                        $adId,
                         $campaignId,
                     );
 
-                    Log::info('Ad duplication completed successfully.', [
+                    Log::info('Ad duplication queued successfully.', [
                         'brand_id' => $brand->id,
                         'campaign_id' => $campaignId,
-                        'ad_id' => $slackInteractionPayload->adId($payload),
+                        'ad_id' => $adId,
                     ]);
 
                     return response()->json([
