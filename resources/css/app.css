@@ -328,6 +328,99 @@ button {
     gap: 4px;
 }
 
+.development-charts {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+}
+
+.development-charts article {
+    background: #fff;
+    border: 1px solid var(--soft-line);
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+}
+
+.development-charts article p {
+    color: var(--muted);
+}
+
+.development-charts article p small {
+    display: block;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.development-charts svg {
+    display: block;
+    height: auto;
+    overflow: visible;
+    width: 100%;
+}
+
+.development-charts svg line {
+    stroke: var(--soft-line);
+    stroke-width: 1;
+}
+
+.development-charts svg polyline {
+    fill: none;
+    stroke: var(--text);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+}
+
+.development-charts svg circle {
+    fill: var(--surface);
+    stroke: var(--text);
+    stroke-width: 2;
+}
+
+.development-charts svg .chart-hit-area {
+    fill: transparent;
+    stroke: none;
+}
+
+.development-charts svg .chart-tooltip,
+.development-charts svg .chart-tooltip-bg {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+.development-charts svg g:hover .chart-tooltip,
+.development-charts svg g:hover .chart-tooltip-bg,
+.development-charts svg g:focus .chart-tooltip,
+.development-charts svg g:focus .chart-tooltip-bg,
+.development-charts svg g:focus-within .chart-tooltip,
+.development-charts svg g:focus-within .chart-tooltip-bg {
+    opacity: 1;
+}
+
+.development-charts svg .chart-tooltip-bg {
+    fill: var(--text);
+}
+
+.development-charts svg .chart-tooltip {
+    fill: var(--surface);
+    font-family: inherit;
+    font-size: 14px;
+    text-anchor: middle;
+}
+
+.development-charts svg text {
+    fill: var(--muted);
+    font-family: inherit;
+    font-size: 16px;
+    text-anchor: middle;
+}
+
+.development-charts svg .chart-axis-label {
+    font-size: 18px;
+    text-anchor: end;
+}
+
 .report-shell > section:last-child > section {
     display: grid;
     gap: var(--space-3);
@@ -448,6 +541,10 @@ button {
 @media (min-width: 900px) {
     .report-shell > section:first-of-type article {
         grid-template-columns: 180px 1fr;
+    }
+
+    .development-charts {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
     .report-shell > section:last-child > section {

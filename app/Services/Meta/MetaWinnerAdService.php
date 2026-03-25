@@ -5,6 +5,7 @@ namespace App\Services\Meta;
 use App\Enums\AdvertisingPlatform;
 use App\Enums\TargetMetric;
 use App\Models\Brand;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class MetaWinnerAdService
@@ -30,7 +31,7 @@ class MetaWinnerAdService
             sprintf('act_%s/insights', $brand->meta_ad_account_id),
             [
                 'date_preset' => 'last_7d',
-                'fields' => 'campaign_id,campaign_name,ad_id,ad_name,spend,actions',
+                'fields' => 'campaign_id,campaign_name,ad_id,ad_name,date_start,date_stop,spend,actions',
                 'filtering' => json_encode([
                     [
                         'field' => 'campaign.name',
@@ -49,15 +50,20 @@ class MetaWinnerAdService
             ],
         );
 
-        $fetchedAds = collect($response['data'] ?? [])
+        $dailyRows = collect($response['data'] ?? [])
             ->map(fn (array $ad): array => [
                 'ad_id' => (string) $ad['ad_id'],
                 'ad_name' => (string) $ad['ad_name'],
                 'campaign_id' => (string) $ad['campaign_id'],
                 'campaign_name' => (string) $ad['campaign_name'],
+                'date' => (string) ($ad['date_start'] ?? ''),
                 'spend' => (float) ($ad['spend'] ?? 0),
                 'purchases' => $this->countPurchases($ad['actions'] ?? []),
             ])
+            ->reject(fn (array $ad): bool => str_starts_with($ad['ad_name'], '[KEEP OFF]'))
+            ->values();
+
+        $fetchedAds = $dailyRows
             ->groupBy('ad_id')
             ->map(function (Collection $group) use ($brand): array {
                 $first = $group->first();
@@ -81,9 +87,10 @@ class MetaWinnerAdService
                     'cpa' => $cpa,
                 ];
             })
-            ->reject(fn (array $ad): bool => str_starts_with($ad['ad_name'], '[KEEP OFF]'))
             ->values()
             ->values();
+
+        $dailyTotals = $this->buildDailyTotals($dailyRows);
 
         $phase4Ads = $this->fetchPhase4Ads($brand, $scalingCampaigns);
         $scaledCreativeIds = $phase4Ads
@@ -98,6 +105,7 @@ class MetaWinnerAdService
                 'winner_ads' => collect(),
                 'fetched_ads' => $fetchedAds,
                 'scaling_campaigns' => $scalingCampaigns,
+                'daily_totals' => $dailyTotals,
             ];
         }
 
@@ -112,6 +120,7 @@ class MetaWinnerAdService
                 'winner_ads' => $winnerAds,
                 'fetched_ads' => $fetchedAds,
                 'scaling_campaigns' => $scalingCampaigns,
+                'daily_totals' => $dailyTotals,
             ];
         }
 
@@ -129,7 +138,42 @@ class MetaWinnerAdService
             ->values(),
             'fetched_ads' => $fetchedAds,
             'scaling_campaigns' => $scalingCampaigns,
+            'daily_totals' => $dailyTotals,
         ];
+    }
+
+    protected function buildDailyTotals(Collection $dailyRows): Collection
+    {
+        $groupedByDate = $dailyRows
+            ->groupBy('date')
+            ->map(function (Collection $group): array {
+                $spend = round($group->sum('spend'), 2);
+                $purchases = (int) $group->sum('purchases');
+
+                return [
+                    'spend' => $spend,
+                    'purchases' => $purchases,
+                    'cpa' => $purchases > 0 ? round($spend / $purchases, 2) : 0.0,
+                ];
+            });
+
+        return collect(range(7, 1))
+            ->map(function (int $daysAgo) use ($groupedByDate): array {
+                $date = Carbon::now('Europe/Berlin')->subDays($daysAgo)->toDateString();
+                $dailyTotal = $groupedByDate->get($date, [
+                    'spend' => 0.0,
+                    'purchases' => 0,
+                    'cpa' => 0.0,
+                ]);
+
+                return [
+                    'date' => $date,
+                    'spend' => (float) $dailyTotal['spend'],
+                    'purchases' => (int) $dailyTotal['purchases'],
+                    'cpa' => (float) $dailyTotal['cpa'],
+                ];
+            })
+            ->values();
     }
 
     protected function fetchAdDetails(array $adIds): array

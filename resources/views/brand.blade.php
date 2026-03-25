@@ -5,7 +5,7 @@
         <header>
             <div>
                 <h1>{{ $brand->name }} Overview</h1>
-                <h2>{{ now('Europe/Berlin')->toDateString() }}</h2>
+                <p><strong>{{ now('Europe/Berlin')->toDateString() }}</strong></p>
                 <p>Based on Meta ad performance from the last 7 days.</p>
             </div>
 
@@ -76,6 +76,48 @@
                         </section>
                     </article>
                 @endforeach
+            @endif
+        </section>
+
+        <section>
+            <h2>Performance Development</h2>
+
+            @if ($dailyTotals->isEmpty())
+                <p>No daily development data found for the last 7 days.</p>
+            @else
+                <section class="development-charts">
+                    @foreach ($developmentCharts as $chart)
+                        <article>
+                            <h3>{{ $chart['title'] }}</h3>
+                            <p>
+                                @if ($chart['metric'] === 'spend' || $chart['metric'] === 'cpa')
+                                    {{ number_format($chart['total'], 2, ',', '.') }}€
+                                @else
+                                    {{ number_format($chart['total'], 0, ',', '.') }}
+                                @endif
+                                <small>last 7 days</small>
+                            </p>
+
+                            <svg aria-label="{{ $chart['title'] }} over the last 7 days" role="img" viewBox="0 0 {{ $chart['width'] }} {{ $chart['height'] }}">
+                                @foreach ($chart['axis_labels'] as $axisLabel)
+                                    <line x1="56" x2="{{ $chart['width'] }}" y1="{{ $axisLabel['y'] - 4 }}" y2="{{ $axisLabel['y'] - 4 }}"></line>
+                                    <text class="chart-axis-label" x="{{ $axisLabel['x'] }}" y="{{ $axisLabel['y'] }}">{{ $axisLabel['text'] }}</text>
+                                @endforeach
+                                <polyline points="{{ $chart['points'] }}"></polyline>
+
+                                @foreach ($chart['point_data'] as $point)
+                                    <g tabindex="0">
+                                        <circle class="chart-hit-area" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="12"></circle>
+                                        <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="4"></circle>
+                                        <rect class="chart-tooltip-bg" height="24" rx="4" ry="4" width="92" x="{{ max(4, min($chart['width'] - 96, $point['x'] - 46)) }}" y="{{ max(4, $point['y'] - 38) }}"></rect>
+                                        <text class="chart-tooltip" x="{{ $point['x'] }}" y="{{ max(20, $point['y'] - 22) }}">{{ $point['label'] }}: {{ $point['value'] }}</text>
+                                    </g>
+                                    <text x="{{ $point['x'] }}" y="{{ $chart['height'] - 8 }}">{{ $point['label'] }}</text>
+                                @endforeach
+                            </svg>
+                        </article>
+                    @endforeach
+                </section>
             @endif
         </section>
 
