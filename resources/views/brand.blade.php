@@ -90,26 +90,28 @@
                         <article>
                             <h3>{{ $dimension['title'] }}</h3>
 
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th scope="col">{{ $dimension['label'] }}</th>
-                                        <th scope="col">Spend</th>
-                                        <th scope="col">Purchases</th>
-                                        <th scope="col">CPA</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($dimension['rows'] as $row)
+                            <section>
+                                <table>
+                                    <thead>
                                         <tr>
-                                            <th scope="row">{{ $row['value'] }}</th>
-                                            <td>{{ number_format($row['spend'], 2, ',', '.') }}€</td>
-                                            <td>{{ $row['purchases'] }}</td>
-                                            <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
+                                            <th scope="col">{{ $dimension['label'] }}</th>
+                                            <th scope="col">Spend</th>
+                                            <th scope="col">Purchases</th>
+                                            <th scope="col">CPA</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($dimension['rows'] as $row)
+                                            <tr>
+                                                <th scope="row">{{ $row['value'] }}</th>
+                                                <td>{{ number_format($row['spend'], 2, ',', '.') }}€</td>
+                                                <td>{{ $row['purchases'] }}</td>
+                                                <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </section>
                         </article>
                     @endforeach
                 </section>

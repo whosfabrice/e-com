@@ -337,14 +337,17 @@ button {
 .report-shell > section:last-child article {
     background: #fff;
     border: 1px solid var(--soft-line);
-    overflow-x: auto;
     padding: var(--space-3);
-    -webkit-overflow-scrolling: touch;
 }
 
 .report-shell > section:last-child article h3 {
     font-size: 16px;
     margin-bottom: var(--space-2);
+}
+
+.report-shell > section:last-child article > section {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .report-shell > section:last-child table {
