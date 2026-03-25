@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap');
+
 :root {
     --bg: #f5f3ee;
     --surface: #fffdfa;
@@ -172,6 +174,9 @@ p {
 h1,
 h2,
 h3 {
+    font-family:
+        "Newsreader", "Iowan Old Style", "Palatino Linotype", "Book Antiqua",
+        Palatino, "Times New Roman", serif;
     letter-spacing: -0.04em;
 }
 
