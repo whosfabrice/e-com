@@ -410,6 +410,23 @@ button {
     margin-top: var(--space-2);
 }
 
+@media (max-width: 749px) {
+    main {
+        padding: var(--space-3);
+    }
+
+    .report-shell {
+        gap: var(--space-5);
+    }
+
+    .report-shell > header,
+    .report-shell > section {
+        background: transparent;
+        border: 0;
+        padding: 0;
+    }
+}
+
 @media (min-width: 750px) {
     main {
         margin-left: var(--aside-w);
