@@ -265,7 +265,7 @@ button {
 
 .report-shell > section > h2,
 .settings-shell > section > h2 {
-    font-size: 18px;
+    font-size: 24px;
     margin-bottom: var(--space-3);
 }
 
