@@ -203,12 +203,12 @@ class SlackReportBuilder
 
         $dimensions = [
             ['title' => 'Languages', 'label' => 'Language', 'key' => 'language', 'sort' => 'spend_desc'],
-            ['title' => 'Consumer Awareness', 'label' => 'Consumer Awareness', 'key' => 'awareness', 'sort' => 'label_desc'],
-            ['title' => 'Media Types', 'label' => 'Media Type', 'key' => 'media_type', 'sort' => 'spend_desc'],
-            ['title' => 'Products', 'label' => 'Product', 'key' => 'product', 'sort' => 'spend_desc'],
-            ['title' => 'Offers', 'label' => 'Offer', 'key' => 'offer', 'sort' => 'spend_desc'],
-            ['title' => 'Angles', 'label' => 'Angle', 'key' => 'angle', 'sort' => 'spend_desc'],
-            ['title' => 'Concepts', 'label' => 'Concept', 'key' => 'concept', 'sort' => 'spend_desc'],
+            ['title' => 'Consumer Awareness', 'label' => 'Awareness Level', 'key' => 'awareness', 'sort' => 'label_desc'],
+            ['title' => 'Media Types', 'label' => 'Type', 'key' => 'media_type', 'sort' => 'spend_desc'],
+            ['title' => 'Products', 'label' => 'Product name', 'key' => 'product', 'sort' => 'spend_desc'],
+            ['title' => 'Offers', 'label' => 'Offer name', 'key' => 'offer', 'sort' => 'spend_desc'],
+            ['title' => 'Angles', 'label' => 'Angle name', 'key' => 'angle', 'sort' => 'spend_desc'],
+            ['title' => 'Concepts', 'label' => 'Concept name', 'key' => 'concept', 'sort' => 'spend_desc'],
         ];
 
         $parsedAds = $ads->map(fn (array $ad): array => [
