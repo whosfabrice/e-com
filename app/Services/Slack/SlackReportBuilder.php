@@ -205,10 +205,10 @@ class SlackReportBuilder
             ['title' => 'Languages', 'label' => 'Language', 'key' => 'language', 'sort' => 'spend_desc'],
             ['title' => 'Consumer Awareness', 'label' => 'Awareness Level', 'key' => 'awareness', 'sort' => 'label_desc'],
             ['title' => 'Media Types', 'label' => 'Type', 'key' => 'media_type', 'sort' => 'spend_desc'],
-            ['title' => 'Products', 'label' => 'Product name', 'key' => 'product', 'sort' => 'spend_desc'],
-            ['title' => 'Offers', 'label' => 'Offer name', 'key' => 'offer', 'sort' => 'spend_desc'],
-            ['title' => 'Angles', 'label' => 'Angle name', 'key' => 'angle', 'sort' => 'spend_desc'],
-            ['title' => 'Concepts', 'label' => 'Concept name', 'key' => 'concept', 'sort' => 'spend_desc'],
+            ['title' => 'Products', 'label' => 'Product Name', 'key' => 'product', 'sort' => 'spend_desc'],
+            ['title' => 'Offers', 'label' => 'Offer Name', 'key' => 'offer', 'sort' => 'spend_desc'],
+            ['title' => 'Angles', 'label' => 'Angle Name', 'key' => 'angle', 'sort' => 'spend_desc'],
+            ['title' => 'Concepts', 'label' => 'Concept Name', 'key' => 'concept', 'sort' => 'spend_desc'],
         ];
 
         $parsedAds = $ads->map(fn (array $ad): array => [
