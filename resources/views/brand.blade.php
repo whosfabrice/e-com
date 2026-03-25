@@ -30,7 +30,7 @@
             @if ($winnerAdsError)
                 <p class="error">{{ $winnerAdsError }}</p>
             @elseif ($winnerAds->isEmpty())
-                <p>✅ All winning creative tests have been added to a scaling campaign.</p>
+                <p>✓ All winning creative tests have been added to a scaling campaign.</p>
             @else
                 <p>Identified {{ $winnerAds->count() }} creative testing winner{{ $winnerAds->count() === 1 ? '' : 's' }} that should be added to a scaling campaign.</p>
 

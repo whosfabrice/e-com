@@ -49,7 +49,7 @@ class SlackReportBuilder
                 'text' => [
                     'type' => 'mrkdwn',
                     'text' => $winnerAds->isEmpty()
-                        ? '✅ All winning creative tests have been added to a scaling campaign.'
+                        ? '✓ All winning creative tests have been added to a scaling campaign.'
                         : 'Identified '.$winnerAds->count().' creative testing winner'.($winnerAds->count() === 1 ? '' : 's').' that should be added to a scaling campaign.',
                 ],
             ],

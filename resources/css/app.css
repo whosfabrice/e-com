@@ -213,14 +213,17 @@ button {
     max-width: 1280px;
 }
 
-.report-shell > header,
-.report-shell > section,
 .settings-shell > header,
 .settings-shell > section,
 .flash {
     background: var(--surface);
     border: 1px solid var(--line);
     padding: var(--space-4);
+}
+
+.report-shell > header,
+.report-shell > section {
+    padding: 0;
 }
 
 .report-shell > header,
@@ -417,13 +420,6 @@ button {
 
     .report-shell {
         gap: var(--space-5);
-    }
-
-    .report-shell > header,
-    .report-shell > section {
-        background: transparent;
-        border: 0;
-        padding: 0;
     }
 }
 
