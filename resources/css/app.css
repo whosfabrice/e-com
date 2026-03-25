@@ -333,7 +333,9 @@ button {
 .report-shell > section:last-child article {
     background: #fff;
     border: 1px solid var(--soft-line);
+    overflow-x: auto;
     padding: var(--space-3);
+    -webkit-overflow-scrolling: touch;
 }
 
 .report-shell > section:last-child article h3 {
@@ -343,6 +345,7 @@ button {
 
 .report-shell > section:last-child table {
     border-collapse: collapse;
+    min-width: 460px;
     width: 100%;
 }
 
