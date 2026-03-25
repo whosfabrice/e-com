@@ -49,7 +49,7 @@ class SlackReportBuilder
                 'text' => [
                     'type' => 'mrkdwn',
                     'text' => $winnerAds->isEmpty()
-                        ? "No winning creatives in testing that haven't been added to a scaling campaign."
+                        ? '✅ All winning creative tests have been added to a scaling campaign.'
                         : 'Identified '.$winnerAds->count().' creative testing winner'.($winnerAds->count() === 1 ? '' : 's').' that should be added to a scaling campaign.',
                 ],
             ],
@@ -168,6 +168,39 @@ class SlackReportBuilder
             return [];
         }
 
+        $dimensions = $this->creativeStrategyInsights($ads);
+
+        $blocks = [
+            ['type' => 'divider'],
+            [
+                'type' => 'header',
+                'text' => [
+                    'type' => 'plain_text',
+                    'emoji' => true,
+                    'text' => 'Creative Strategy',
+                ],
+            ],
+            [
+                'type' => 'table',
+                'column_settings' => [
+                    ['is_wrapped' => true],
+                    ['align' => 'right'],
+                    ['align' => 'right'],
+                    ['align' => 'right'],
+                ],
+                'rows' => $this->buildCreativeStrategyTableRows($dimensions),
+            ],
+        ];
+
+        return $blocks;
+    }
+
+    public function creativeStrategyInsights(Collection $ads): array
+    {
+        if ($ads->isEmpty()) {
+            return [];
+        }
+
         $dimensions = [
             ['title' => 'Languages', 'label' => 'Language', 'key' => 'language', 'sort' => 'spend_desc'],
             ['title' => 'Consumer Awareness', 'label' => 'Consumer Awareness', 'key' => 'awareness', 'sort' => 'label_desc'],
@@ -183,46 +216,98 @@ class SlackReportBuilder
             ...$this->parseAdNameDimensions($ad['ad_name']),
         ]);
 
-        $blocks = [
-            ['type' => 'divider'],
-            [
-                'type' => 'header',
-                'text' => [
-                    'type' => 'plain_text',
-                    'emoji' => true,
-                    'text' => 'Creative Strategy',
+        return collect($dimensions)
+            ->map(function (array $dimension) use ($parsedAds): array {
+                $rows = $parsedAds
+                    ->groupBy($dimension['key'])
+                    ->map(function (Collection $group, string $value): array {
+                        $spend = round($group->sum('spend'), 2);
+                        $purchases = (int) $group->sum('purchases');
+                        $cpa = $purchases > 0 ? round($spend / $purchases, 2) : 0.0;
+
+                        return [
+                            'value' => $value,
+                            'spend' => $spend,
+                            'purchases' => $purchases,
+                            'cpa' => $cpa,
+                        ];
+                    })
+                    ->pipe(fn (Collection $rows): Collection => $this->sortInsightRows($rows, $dimension['sort']))
+                    ->values()
+                    ->all();
+
+                return [
+                    'title' => $dimension['title'],
+                    'label' => $dimension['label'],
+                    'rows' => $rows,
+                ];
+            })
+            ->filter(fn (array $dimension): bool => $dimension['rows'] !== [])
+            ->values()
+            ->all();
+    }
+
+    protected function buildCreativeStrategyTableRows(array $dimensions): array
+    {
+        $rows = [];
+
+        foreach ($dimensions as $dimension) {
+            if (count($rows) >= 100) {
+                break;
+            }
+
+            $rows[] = [
+                $this->richTableCell($dimension['label'], true),
+                $this->richTableCell('Spend', true),
+                $this->richTableCell('Purchases', true),
+                $this->richTableCell('CPA', true),
+            ];
+
+            foreach ($dimension['rows'] as $row) {
+                if (count($rows) >= 100) {
+                    break 2;
+                }
+
+                $rows[] = [
+                    $this->rawTableCell($row['value']),
+                    $this->rawTableCell($this->formatEuro($row['spend'])),
+                    $this->rawTableCell((string) $row['purchases']),
+                    $this->rawTableCell($this->formatEuro($row['cpa'])),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    protected function rawTableCell(string $text): array
+    {
+        return [
+            'type' => 'raw_text',
+            'text' => $text,
+        ];
+    }
+
+    protected function richTableCell(string $text, bool $bold = false): array
+    {
+        $element = [
+            'type' => 'text',
+            'text' => $text,
+        ];
+
+        if ($bold) {
+            $element['style'] = ['bold' => true];
+        }
+
+        return [
+            'type' => 'rich_text',
+            'elements' => [
+                [
+                    'type' => 'rich_text_section',
+                    'elements' => [$element],
                 ],
             ],
         ];
-
-        foreach ($dimensions as $dimension) {
-            $rows = $parsedAds
-                ->groupBy($dimension['key'])
-                ->map(function (Collection $group, string $value): array {
-                    $spend = round($group->sum('spend'), 2);
-                    $purchases = (int) $group->sum('purchases');
-                    $cpa = $purchases > 0 ? round($spend / $purchases, 2) : 0.0;
-
-                    return [
-                        'value' => $value,
-                        'spend' => $spend,
-                        'purchases' => $purchases,
-                        'cpa' => $cpa,
-                    ];
-                })
-                ->pipe(fn (Collection $rows): Collection => $this->sortInsightRows($rows, $dimension['sort']))
-                ->values();
-
-            $blocks[] = [
-                'type' => 'section',
-                'text' => [
-                    'type' => 'mrkdwn',
-                    'text' => '*'.$dimension['title']."*\n```".$this->buildInsightTable($rows, $dimension['label'])."```",
-                ],
-            ];
-        }
-
-        return $blocks;
     }
 
     protected function parseAdNameDimensions(string $adName): array
@@ -253,65 +338,6 @@ class SlackReportBuilder
             'label_desc' => $rows->sortByDesc('value', SORT_NATURAL | SORT_FLAG_CASE),
             default => $rows->sortByDesc('spend'),
         };
-    }
-
-    protected function buildInsightTable(Collection $rows, string $valueHeader): string
-    {
-        if ($rows->isEmpty()) {
-            return $valueHeader.'   Spend   Purchases   CPA';
-        }
-
-        $normalizedRows = $rows->map(fn (array $row): array => [
-            'value' => $this->truncateTableCell($row['value'], 28),
-            'spend' => $this->formatEuro($row['spend']),
-            'purchases' => (string) $row['purchases'],
-            'cpa' => $this->formatEuro($row['cpa']),
-        ])->values();
-
-        $valueWidth = max(
-            mb_strlen($valueHeader),
-            $normalizedRows->max(fn (array $row): int => mb_strlen($row['value'])),
-        );
-        $spendWidth = max(
-            mb_strlen('Spend'),
-            $normalizedRows->max(fn (array $row): int => mb_strlen($row['spend'])),
-        );
-        $purchaseWidth = max(
-            mb_strlen('Purchases'),
-            $normalizedRows->max(fn (array $row): int => mb_strlen($row['purchases'])),
-        );
-        $cpaWidth = max(
-            mb_strlen('CPA'),
-            $normalizedRows->max(fn (array $row): int => mb_strlen($row['cpa'])),
-        );
-
-        $header = $this->padRight($valueHeader, $valueWidth).'  '
-            .$this->padRight('Spend', $spendWidth).'  '
-            .$this->padRight('Purchases', $purchaseWidth).'  '
-            .$this->padRight('CPA', $cpaWidth);
-
-        $lines = $normalizedRows->map(
-            fn (array $row): string => $this->padRight($row['value'], $valueWidth).'  '
-                .$this->padRight($row['spend'], $spendWidth).'  '
-                .$this->padRight($row['purchases'], $purchaseWidth).'  '
-                .$this->padRight($row['cpa'], $cpaWidth)
-        );
-
-        return $header."\n".$lines->implode("\n");
-    }
-
-    protected function padRight(string $value, int $width): string
-    {
-        return $value.str_repeat(' ', max(0, $width - mb_strlen($value)));
-    }
-
-    protected function truncateTableCell(string $value, int $limit): string
-    {
-        if (mb_strlen($value) <= $limit) {
-            return $value;
-        }
-
-        return mb_substr($value, 0, $limit - 3).'...';
     }
 
     public function withAdStatus(array $message, string $adId, string $statusText): array

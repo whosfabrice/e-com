@@ -45,31 +45,44 @@ class MetaWinnerAdService
                 ], JSON_THROW_ON_ERROR),
                 'level' => 'ad',
                 'limit' => 500,
+                'time_increment' => 1,
             ],
         );
 
         $fetchedAds = collect($response['data'] ?? [])
-            ->map(function (array $ad) use ($brand): array {
-                $purchases = $this->countPurchases($ad['actions'] ?? []);
-                $spend = (float) ($ad['spend'] ?? 0);
+            ->map(fn (array $ad): array => [
+                'ad_id' => (string) $ad['ad_id'],
+                'ad_name' => (string) $ad['ad_name'],
+                'campaign_id' => (string) $ad['campaign_id'],
+                'campaign_name' => (string) $ad['campaign_name'],
+                'spend' => (float) ($ad['spend'] ?? 0),
+                'purchases' => $this->countPurchases($ad['actions'] ?? []),
+            ])
+            ->groupBy('ad_id')
+            ->map(function (Collection $group) use ($brand): array {
+                $first = $group->first();
+                $spend = round($group->sum('spend'), 2);
+                $purchases = (int) $group->sum('purchases');
+                $adId = (string) ($first['ad_id'] ?? '');
                 $cpa = $purchases > 0 ? round($spend / $purchases, 2) : 0.0;
 
                 return [
-                    'ad_id' => (string) $ad['ad_id'],
+                    'ad_id' => $adId,
                     'ad_link' => sprintf(
                         'https://www.facebook.com/adsmanager/manage/ads?act=%s&selected_ad_ids=%s',
                         $brand->meta_ad_account_id,
-                        $ad['ad_id'],
+                        $adId,
                     ),
-                    'ad_name' => (string) $ad['ad_name'],
-                    'campaign_id' => (string) $ad['campaign_id'],
-                    'campaign_name' => (string) $ad['campaign_name'],
+                    'ad_name' => (string) ($first['ad_name'] ?? ''),
+                    'campaign_id' => (string) ($first['campaign_id'] ?? ''),
+                    'campaign_name' => (string) ($first['campaign_name'] ?? ''),
                     'spend' => $spend,
                     'purchases' => $purchases,
                     'cpa' => $cpa,
                 ];
             })
             ->reject(fn (array $ad): bool => str_starts_with($ad['ad_name'], '[KEEP OFF]'))
+            ->values()
             ->values();
 
         $phase4Ads = $this->fetchPhase4Ads($brand, $scalingCampaigns);

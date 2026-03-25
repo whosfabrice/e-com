@@ -10,13 +10,21 @@
         <header>
             <h1>{{ config('app.name', 'Laravel') }}</h1>
             <input id="hamburger" type="checkbox">
-            <label for="hamburger">Menu</label>
+            <label for="hamburger" aria-label="Toggle navigation">
+                <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6H21" stroke="currentColor" stroke-linecap="square" stroke-width="2.25"/>
+                    <path d="M3 12H21" stroke="currentColor" stroke-linecap="square" stroke-width="2.25"/>
+                    <path d="M3 18H21" stroke="currentColor" stroke-linecap="square" stroke-width="2.25"/>
+                </svg>
+            </label>
             <aside>
-                <section>
+                <nav aria-label="Primary">
                     <h2>Agency</h2>
-                    <a href="{{ route('dashboard') }}">Dashboard</a>
-                </section>
-                <section>
+                    <ul>
+                        <li><a href="{{ route('dashboard') }}">Overview</a></li>
+                    </ul>
+                </nav>
+                <nav aria-label="Brands">
                     <h2>Brands</h2>
                     <ul>
                         @foreach ($brands as $brand)
@@ -25,7 +33,7 @@
                             </li>
                         @endforeach
                     </ul>
-                </section>
+                </nav>
             </aside>
         </header>
         <main>

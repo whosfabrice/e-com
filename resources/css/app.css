@@ -1,85 +1,162 @@
+:root {
+    --bg: #f5f3ee;
+    --surface: #fffdfa;
+    --text: #111;
+    --muted: #666057;
+    --line: #1b1b1b;
+    --soft-line: #d9d3ca;
+    --space-1: 8px;
+    --space-2: 12px;
+    --space-3: 16px;
+    --space-4: 24px;
+    --space-5: 32px;
+    --header-h: 64px;
+    --footer-h: 28px;
+    --aside-w: 280px;
+}
+
 html,
 body {
     box-sizing: border-box;
-    height: 100%;
+    height: 100vh;
     margin: 0;
     padding: 0;
     width: 100%;
     overflow: hidden;
 }
 
+*,
+*::before,
+*::after {
+    box-sizing: inherit;
+}
+
 body {
-    background-color: #fff;
-    color: #000;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
     font-family:
         "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
         "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
         "Noto Color Emoji";
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5;
 }
 
 header,
 main,
 footer {
-    box-sizing: border-box;
-    display: block;
     position: relative;
 }
 
-header {
-    background: red;
-    height: 50px;
-    box-shadow: 0 1px 0 #000;
+body > header {
+    align-items: center;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    height: var(--header-h);
+    justify-content: center;
     z-index: 2;
 }
 
-header aside {
-    background: yellow;
-    box-sizing: border-box;
-    height: calc(100% - 70px);
-    padding: 0;
-    position: absolute;
-    top: 50px;
-    transform: translate(-250px, 0);
-    transition: transform 0.1s ease;
-    width: 250px;
-    box-shadow: -1px 0 0 #000;
+body > header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin: 0;
+    pointer-events: none;
 }
 
-header input[type="checkbox"]:checked ~ aside {
+body > header input {
+    left: var(--space-3);
+    opacity: 0;
+    position: absolute;
+    top: 18px;
+}
+
+body > header label[for="hamburger"] {
+    color: var(--text);
+    cursor: pointer;
+    display: block;
+    left: var(--space-3);
+    line-height: 0;
+    padding: 6px;
+    position: absolute;
+    top: 14px;
+}
+
+body > header label[for="hamburger"] svg {
+    display: block;
+    height: 24px;
+    width: 24px;
+}
+
+body > header aside {
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    height: calc(100vh - var(--header-h) - var(--footer-h));
+    left: 0;
+    padding: var(--space-4) var(--space-3);
+    position: absolute;
+    top: var(--header-h);
+    transform: translate(calc(-1 * var(--aside-w)), 0);
+    transition: transform 0.18s ease;
+    width: var(--aside-w);
+}
+
+body > header input:checked ~ aside {
     transform: translate3d(0, 0, 0);
 }
 
-main {
-    background: green;
-    height: calc(100% - 70px);
+body > header aside nav + nav {
+    margin-top: var(--space-5);
+}
+
+body > header aside h2 {
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    margin: 0 0 var(--space-2);
+    text-transform: uppercase;
+}
+
+body > header aside ul {
+    list-style: none;
     margin: 0;
-    overflow: scroll;
-    padding: 20px;
+    padding: 0;
+}
+
+body > header aside li + li {
+    margin-top: var(--space-1);
+}
+
+body > header aside a {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+body > header aside a:hover {
+    color: var(--text);
+    text-decoration: underline;
+}
+
+main {
+    background: var(--bg);
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: var(--space-4);
     width: 100%;
-    z-index: 1;
 }
 
 footer {
-    background: #fff;
-    box-shadow: 0 -1px 0 #000;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
     font-size: 9px;
-    height: 20px;
-    line-height: 20px;
+    height: var(--footer-h);
+    line-height: var(--footer-h);
     text-align: center;
-    z-index: 2;
-}
-
-@media (min-width: 750px) {
-    main {
-        margin: 0 0 0 250px;
-        width: calc(100% - 250px);
-    }
-
-    header aside {
-        transform: none;
-    }
 }
 
 h1,
@@ -90,18 +167,267 @@ h5,
 h6,
 p {
     margin: 0;
-    padding: 0;
 }
 
-ol,
-ul {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+h1,
+h2,
+h3 {
+    letter-spacing: -0.04em;
 }
 
-aside section {
+a {
+    color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+input,
+select,
+button {
+    appearance: none;
     background: #fff;
-    padding: 10px;
-    margin: 10px;
+    border: 1px solid var(--line);
+    border-radius: 0;
+    color: inherit;
+    font: inherit;
+    padding: 10px 12px;
+}
+
+button {
+    background: var(--text);
+    color: var(--surface);
+    cursor: pointer;
+}
+
+.report-shell,
+.settings-shell {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0 auto;
+    max-width: 1280px;
+}
+
+.report-shell > header,
+.report-shell > section,
+.settings-shell > header,
+.settings-shell > section,
+.flash {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: var(--space-4);
+}
+
+.report-shell > header,
+.settings-shell > header {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.report-shell > header h1,
+.settings-shell > header h1 {
+    font-size: 28px;
+    line-height: 1.05;
+}
+
+.report-shell > header p,
+.settings-shell > header p {
+    color: var(--muted);
+}
+
+.report-shell > header nav a,
+.settings-shell > header nav a {
+    color: var(--muted);
+    text-decoration: none;
+}
+
+.report-shell > header nav a:hover,
+.settings-shell > header nav a:hover {
+    color: var(--text);
+    text-decoration: underline;
+}
+
+.flash {
+    background: #f2efe8;
+}
+
+.error {
+    color: #a40000;
+}
+
+.report-shell > section > h2,
+.settings-shell > section > h2 {
+    font-size: 18px;
+    margin-bottom: var(--space-3);
+}
+
+.report-shell > section:first-of-type > article + article,
+.settings-shell > section ul li + li,
+.settings-shell > section form + form {
+    margin-top: var(--space-3);
+}
+
+.report-shell > section:first-of-type article {
+    background: #fff;
+    border: 1px solid var(--soft-line);
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+}
+
+.report-shell > section:first-of-type figure {
+    margin: 0;
+}
+
+.report-shell > section:first-of-type figure img {
+    max-width: 180px;
+}
+
+.report-shell > section:first-of-type article > section {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.report-shell > section:first-of-type article h3 {
+    font-size: 16px;
+    line-height: 1.25;
+}
+
+.report-shell > section:first-of-type article h3 a {
+    text-decoration: none;
+}
+
+.report-shell > section:first-of-type article h3 a:hover {
+    text-decoration: underline;
+}
+
+.report-shell > section:first-of-type article p {
+    color: var(--muted);
+}
+
+.report-shell > section:first-of-type article form,
+.settings-shell form {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.report-shell > section:first-of-type article form label,
+.settings-shell form label {
+    display: grid;
+    gap: 4px;
+}
+
+.report-shell > section:last-child > section {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+}
+
+.report-shell > section:last-child article {
+    background: #fff;
+    border: 1px solid var(--soft-line);
+    padding: var(--space-3);
+}
+
+.report-shell > section:last-child article h3 {
+    font-size: 16px;
+    margin-bottom: var(--space-2);
+}
+
+.report-shell > section:last-child table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.report-shell > section:last-child th,
+.report-shell > section:last-child td {
+    padding: 8px 14px 8px 0;
+    text-align: right;
+    vertical-align: top;
+}
+
+.report-shell > section:last-child thead th {
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.report-shell > section:last-child th:first-child,
+.report-shell > section:last-child td:first-child {
+    text-align: left;
+}
+
+.report-shell > section:last-child th:last-child,
+.report-shell > section:last-child td:last-child {
+    padding-right: 0;
+}
+
+.report-shell > section:last-child tbody th {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.settings-shell fieldset {
+    border: 1px solid var(--soft-line);
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: var(--space-3);
+}
+
+.settings-shell legend {
+    font-weight: 700;
+    padding: 0 var(--space-1);
+}
+
+.settings-shell ul {
+    display: grid;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0 0 var(--space-3);
+    padding: 0;
+}
+
+.settings-shell li {
+    background: #fff;
+    border: 1px solid var(--soft-line);
+    padding: var(--space-3);
+}
+
+.settings-shell li form:last-child {
+    justify-content: flex-end;
+    margin-top: var(--space-2);
+}
+
+@media (min-width: 750px) {
+    main {
+        margin-left: var(--aside-w);
+        width: calc(100% - var(--aside-w));
+    }
+
+    body > header aside {
+        transform: none;
+    }
+
+    body > header input,
+    body > header label[for="hamburger"] {
+        display: none;
+    }
+}
+
+@media (min-width: 900px) {
+    .report-shell > section:first-of-type article {
+        grid-template-columns: 180px 1fr;
+    }
+
+    .report-shell > section:last-child > section {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
