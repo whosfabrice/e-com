@@ -3,6 +3,7 @@
 namespace App\Services\Slack;
 
 use App\Models\Brand;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 class SlackReportBuilder
@@ -23,7 +24,16 @@ class SlackReportBuilder
                 'text' => [
                     'type' => 'plain_text',
                     'emoji' => true,
-                    'text' => "{$brand->name} Daily Report",
+                    'text' => "{$brand->name} Daily Report - ".Carbon::now('Europe/Berlin')->toDateString(),
+                ],
+            ],
+            [
+                'type' => 'context',
+                'elements' => [
+                    [
+                        'type' => 'mrkdwn',
+                        'text' => 'Based on Meta ad performance from the last 7 days.',
+                    ],
                 ],
             ],
             [
