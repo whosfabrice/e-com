@@ -337,6 +337,7 @@ button {
 .report-shell > section:last-child article {
     background: #fff;
     border: 1px solid var(--soft-line);
+    min-width: 0;
     padding: var(--space-3);
 }
 
@@ -346,6 +347,8 @@ button {
 }
 
 .report-shell > section:last-child article > section {
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
