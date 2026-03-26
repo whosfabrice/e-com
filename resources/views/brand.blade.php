@@ -9,8 +9,8 @@
             </div>
 
             <nav aria-label="Report actions">
-                <a @class(['is-active' => $timeframeDays === 7]) href="{{ route('brand', ['brand' => $brand, 'days' => 7]) }}">Last 7 days</a>
-                <a @class(['is-active' => $timeframeDays === 14]) href="{{ route('brand', ['brand' => $brand, 'days' => 14]) }}">Last 14 days</a>
+                <a @class(['is-active' => $timeframeDays === 7]) href="{{ route('brand', ['brand' => $brand, 'days' => 7]) }}">Last 7 days</a> ·
+                <a @class(['is-active' => $timeframeDays === 14]) href="{{ route('brand', ['brand' => $brand, 'days' => 14]) }}">Last 14 days</a> ·
                 <a @class(['is-active' => $timeframeDays === 30]) href="{{ route('brand', ['brand' => $brand, 'days' => 30]) }}">Last 30 days</a>
             </nav>
 
@@ -161,7 +161,7 @@
         </section>
 
         <p>
-            <a href="{{ route('brand.settings', $brand) }}">Settings</a> - Data coverage:
+            <a href="{{ route('brand.settings', $brand) }}">Settings</a> · Data coverage:
             @if ($dataCoverage)
                 {{ $dataCoverage['from'] }} to {{ $dataCoverage['to'] }}
                 @if (! empty($dataCoverage['missing_ranges']))
