@@ -8,7 +8,7 @@
     </head>
     <body>
         <header>
-            <h1><span>{{ config('app.name', 'Laravel') }}</span><i aria-hidden="true"></i></h1>
+            <h1>{{ config('app.name', 'Laravel') }}</h1>
             <input id="hamburger" type="checkbox">
             <label for="hamburger" aria-label="Toggle navigation">
                 <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

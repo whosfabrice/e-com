@@ -9,14 +9,16 @@ use Illuminate\Support\Facades\Cache;
 
 class BrandReportCache
 {
-    public function warmingKeyForBrand(Brand $brand): string
+    protected const KEY_VERSION = 'v2';
+
+    public function warmingKeyForBrand(Brand $brand, int $days = 7): string
     {
-        return sprintf('brands.%s.winner_ads.warming', $brand->id);
+        return sprintf('brands.%s.winner_ads.%s.%s.warming', $brand->id, $days, self::KEY_VERSION);
     }
 
-    public function keyForBrand(Brand $brand): string
+    public function keyForBrand(Brand $brand, int $days = 7): string
     {
-        return sprintf('brands.%s.winner_ads', $brand->id);
+        return sprintf('brands.%s.winner_ads.%s.%s', $brand->id, $days, self::KEY_VERSION);
     }
 
     public function ttl(): Carbon
@@ -24,9 +26,9 @@ class BrandReportCache
         return now()->addHour();
     }
 
-    public function get(Brand $brand, bool $refresh = false): array
+    public function get(Brand $brand, int $days = 7, bool $refresh = false): array
     {
-        $cacheKey = $this->keyForBrand($brand);
+        $cacheKey = $this->keyForBrand($brand, $days);
 
         if ($refresh) {
             Cache::forget($cacheKey);
@@ -35,7 +37,7 @@ class BrandReportCache
         $payload = Cache::remember(
             $cacheKey,
             $this->ttl(),
-            fn (): array => $this->buildPayload($brand),
+            fn (): array => $this->buildPayload($brand, $days),
         );
 
         if (! array_key_exists('daily_totals', $payload)) {
@@ -44,16 +46,16 @@ class BrandReportCache
             $payload = Cache::remember(
                 $cacheKey,
                 $this->ttl(),
-                fn (): array => $this->buildPayload($brand),
+                fn (): array => $this->buildPayload($brand, $days),
             );
         }
 
         return $payload;
     }
 
-    public function cached(Brand $brand): ?array
+    public function cached(Brand $brand, int $days = 7): ?array
     {
-        $payload = Cache::get($this->keyForBrand($brand));
+        $payload = Cache::get($this->keyForBrand($brand, $days));
 
         if (! is_array($payload) || ! array_key_exists('daily_totals', $payload)) {
             return null;
@@ -62,41 +64,45 @@ class BrandReportCache
         return $payload;
     }
 
-    public function refresh(Brand $brand): array
+    public function refresh(Brand $brand, int $days = 7): array
     {
-        return $this->get($brand, true);
+        return $this->get($brand, $days, true);
     }
 
     public function forget(Brand $brand): void
     {
-        Cache::forget($this->keyForBrand($brand));
+        foreach ([7, 14, 30] as $days) {
+            Cache::forget($this->keyForBrand($brand, $days));
+            Cache::forget($this->warmingKeyForBrand($brand, $days));
+        }
     }
 
-    public function markWarming(Brand $brand, int $seconds = 300): bool
+    public function markWarming(Brand $brand, int $days = 7, int $seconds = 300): bool
     {
-        return Cache::add($this->warmingKeyForBrand($brand), true, now()->addSeconds($seconds));
+        return Cache::add($this->warmingKeyForBrand($brand, $days), true, now()->addSeconds($seconds));
     }
 
-    public function clearWarming(Brand $brand): void
+    public function clearWarming(Brand $brand, int $days = 7): void
     {
-        Cache::forget($this->warmingKeyForBrand($brand));
+        Cache::forget($this->warmingKeyForBrand($brand, $days));
     }
 
-    public function isWarming(Brand $brand): bool
+    public function isWarming(Brand $brand, int $days = 7): bool
     {
-        return Cache::has($this->warmingKeyForBrand($brand));
+        return Cache::has($this->warmingKeyForBrand($brand, $days));
     }
 
-    protected function buildPayload(Brand $brand): array
+    protected function buildPayload(Brand $brand, int $days = 7): array
     {
         $cacheTtl = $this->ttl();
-        $reportData = app(MetaWinnerAdService::class)->reportDataForBrand($brand);
+        $reportData = app(MetaWinnerAdService::class)->reportDataForBrand($brand, $days);
 
         return [
             'winner_ads' => $reportData['winner_ads']->values()->all(),
             'fetched_ads' => $reportData['fetched_ads']->values()->all(),
             'scaling_campaigns' => $reportData['scaling_campaigns']->values()->all(),
             'daily_totals' => $reportData['daily_totals']->values()->all(),
+            'timeframe_days' => $days,
             'cached_at' => now()->toIso8601String(),
             'expires_at' => $cacheTtl->toIso8601String(),
         ];

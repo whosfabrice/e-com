@@ -4,19 +4,20 @@
     <section class="report-shell">
         <header>
             <div>
-                <h1>{{ $brand->name }} Overview</h1>
-                <p><strong>{{ now('Europe/Berlin')->toDateString() }}</strong></p>
-                <p>Based on Meta ad performance from the last 7 days.</p>
+                <h1>{{ $brand->name }}</h1>
+                <p>{{ now('Europe/Berlin')->toDateString() }}</p>
             </div>
 
             <nav aria-label="Report actions">
-                <a href="{{ route('brand.settings', $brand) }}">Brand settings</a>
+                <a @class(['is-active' => $timeframeDays === 7]) href="{{ route('brand', ['brand' => $brand, 'days' => 7]) }}">Last 7 days</a>
+                <a @class(['is-active' => $timeframeDays === 14]) href="{{ route('brand', ['brand' => $brand, 'days' => 14]) }}">Last 14 days</a>
+                <a @class(['is-active' => $timeframeDays === 30]) href="{{ route('brand', ['brand' => $brand, 'days' => 30]) }}">Last 30 days</a>
             </nav>
 
             @if ($winnerAdsCachedAt && $winnerAdsExpiresAt)
                 <p>
                     Last updated {{ $winnerAdsCachedAt->diffForHumans() }} · Next update {{ $winnerAdsExpiresAt->diffForHumans() }} ·
-                    <a href="{{ route('brand', ['brand' => $brand, 'refresh' => 1]) }}">Refresh now</a>
+                    <a href="{{ route('brand', ['brand' => $brand, 'days' => $timeframeDays, 'refresh' => 1]) }}">Refresh now</a>
                 </p>
             @endif
         </header>
@@ -25,7 +26,87 @@
             <p class="flash">{{ session('status') }}</p>
         @endif
 
-        <section>
+        <section class="report-development">
+            <h2>Summary</h2>
+
+            @if ($dailyTotals->isEmpty())
+                <p>No daily development data found for the last {{ $timeframeDays }} days.</p>
+            @else
+                <section class="development-charts">
+                    @foreach ($developmentCharts as $chart)
+                        <article>
+                            <h3>{{ $chart['title'] }}</h3>
+                            <p>
+                                @if ($chart['metric'] === 'spend' || $chart['metric'] === 'cpa')
+                                    {{ number_format($chart['total'], 2, ',', '.') }}€
+                                @else
+                                    {{ number_format($chart['total'], 0, ',', '.') }}
+                                @endif
+                            </p>
+
+                            <svg aria-label="{{ $chart['title'] }} over the last 7 days" role="img" viewBox="0 0 {{ $chart['width'] }} {{ $chart['height'] }}">
+                                @foreach ($chart['axis_labels'] as $axisLabel)
+                                    <line x1="56" x2="{{ $chart['width'] }}" y1="{{ $axisLabel['y'] - 4 }}" y2="{{ $axisLabel['y'] - 4 }}"></line>
+                                    <text class="chart-axis-label" x="{{ $axisLabel['x'] }}" y="{{ $axisLabel['y'] }}">{{ $axisLabel['text'] }}</text>
+                                @endforeach
+                                <polyline points="{{ $chart['points'] }}"></polyline>
+
+                                @foreach ($chart['point_data'] as $point)
+                                    <g tabindex="0">
+                                        <circle class="chart-hit-area" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="12"></circle>
+                                        <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="4"></circle>
+                                        <rect class="chart-tooltip-bg" height="24" rx="4" ry="4" width="92" x="{{ max(4, min($chart['width'] - 96, $point['x'] - 46)) }}" y="{{ max(4, $point['y'] - 38) }}"></rect>
+                                        <text class="chart-tooltip" x="{{ $point['x'] }}" y="{{ max(20, $point['y'] - 22) }}">{{ $point['label'] }}: {{ $point['value'] }}</text>
+                                    </g>
+                                    <text x="{{ $point['x'] }}" y="{{ $chart['height'] - 8 }}">{{ $point['label'] }}</text>
+                                @endforeach
+                            </svg>
+                        </article>
+                    @endforeach
+                </section>
+            @endif
+        </section>
+
+        <section class="report-strategy">
+            <h2>Creative Strategy</h2>
+
+            @if ($fetchedAds->isEmpty())
+                <p>No Meta ad performance data found for the last 7 days.</p>
+            @else
+                <section>
+                    @foreach ($strategyInsights as $dimension)
+                        <article>
+                            <h3>{{ $dimension['title'] }}</h3>
+
+                            <section>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{{ $dimension['label'] }}</th>
+                                            <th scope="col">Spend</th>
+                                            <th scope="col">Purchases</th>
+                                            <th scope="col">CPA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($dimension['rows'] as $row)
+                                            <tr>
+                                                <th scope="row">{{ $row['value'] }}</th>
+                                                <td>{{ number_format($row['spend'], 2, ',', '.') }}€</td>
+                                                <td>{{ $row['purchases'] }}</td>
+                                                <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </section>
+                        </article>
+                    @endforeach
+                </section>
+            @endif
+        </section>
+
+        <section class="report-media-buying">
             <h2>Media Buying</h2>
             @if ($winnerAdsError)
                 <p class="error">{{ $winnerAdsError }}</p>
@@ -79,85 +160,13 @@
             @endif
         </section>
 
-        <section>
-            <h2>Performance Development</h2>
-
-            @if ($dailyTotals->isEmpty())
-                <p>No daily development data found for the last 7 days.</p>
-            @else
-                <section class="development-charts">
-                    @foreach ($developmentCharts as $chart)
-                        <article>
-                            <h3>{{ $chart['title'] }}</h3>
-                            <p>
-                                @if ($chart['metric'] === 'spend' || $chart['metric'] === 'cpa')
-                                    {{ number_format($chart['total'], 2, ',', '.') }}€
-                                @else
-                                    {{ number_format($chart['total'], 0, ',', '.') }}
-                                @endif
-                                <small>last 7 days</small>
-                            </p>
-
-                            <svg aria-label="{{ $chart['title'] }} over the last 7 days" role="img" viewBox="0 0 {{ $chart['width'] }} {{ $chart['height'] }}">
-                                @foreach ($chart['axis_labels'] as $axisLabel)
-                                    <line x1="56" x2="{{ $chart['width'] }}" y1="{{ $axisLabel['y'] - 4 }}" y2="{{ $axisLabel['y'] - 4 }}"></line>
-                                    <text class="chart-axis-label" x="{{ $axisLabel['x'] }}" y="{{ $axisLabel['y'] }}">{{ $axisLabel['text'] }}</text>
-                                @endforeach
-                                <polyline points="{{ $chart['points'] }}"></polyline>
-
-                                @foreach ($chart['point_data'] as $point)
-                                    <g tabindex="0">
-                                        <circle class="chart-hit-area" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="12"></circle>
-                                        <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="4"></circle>
-                                        <rect class="chart-tooltip-bg" height="24" rx="4" ry="4" width="92" x="{{ max(4, min($chart['width'] - 96, $point['x'] - 46)) }}" y="{{ max(4, $point['y'] - 38) }}"></rect>
-                                        <text class="chart-tooltip" x="{{ $point['x'] }}" y="{{ max(20, $point['y'] - 22) }}">{{ $point['label'] }}: {{ $point['value'] }}</text>
-                                    </g>
-                                    <text x="{{ $point['x'] }}" y="{{ $chart['height'] - 8 }}">{{ $point['label'] }}</text>
-                                @endforeach
-                            </svg>
-                        </article>
-                    @endforeach
-                </section>
-            @endif
-        </section>
-
-        <section>
-            <h2>Creative Strategy</h2>
-
-            @if ($fetchedAds->isEmpty())
-                <p>No Meta ad performance data found for the last 7 days.</p>
-            @else
-                <section>
-                    @foreach ($strategyInsights as $dimension)
-                        <article>
-                            <h3>{{ $dimension['title'] }}</h3>
-
-                            <section>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">{{ $dimension['label'] }}</th>
-                                            <th scope="col">Spend</th>
-                                            <th scope="col">Purchases</th>
-                                            <th scope="col">CPA</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($dimension['rows'] as $row)
-                                            <tr>
-                                                <th scope="row">{{ $row['value'] }}</th>
-                                                <td>{{ number_format($row['spend'], 2, ',', '.') }}€</td>
-                                                <td>{{ $row['purchases'] }}</td>
-                                                <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </section>
-                        </article>
-                    @endforeach
-                </section>
-            @endif
-        </section>
+        @if ($dataCoverage)
+            <p>
+                <a href="{{ route('brand.settings', $brand) }}">Settings</a> - Data coverage: {{ $dataCoverage['from'] }} to {{ $dataCoverage['to'] }}.
+                @if (! empty($dataCoverage['missing_ranges']))
+                    Missing: {{ implode(', ', $dataCoverage['missing_ranges']) }}.
+                @endif
+            </p>
+        @endif
     </section>
 @endsection

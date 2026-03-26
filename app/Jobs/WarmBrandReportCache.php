@@ -13,6 +13,7 @@ class WarmBrandReportCache implements ShouldQueue
 
     public function __construct(
         public int $brandId,
+        public int $days = 7,
     )
     {
     }
@@ -26,9 +27,9 @@ class WarmBrandReportCache implements ShouldQueue
         }
 
         try {
-            $brandReportCache->refresh($brand);
+            $brandReportCache->refresh($brand, $this->days);
         } finally {
-            $brandReportCache->clearWarming($brand);
+            $brandReportCache->clearWarming($brand, $this->days);
         }
     }
 }

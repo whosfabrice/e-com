@@ -4,10 +4,10 @@ use App\Enums\AdvertisingPlatform;
 use App\Enums\TargetMetric;
 use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Http\Controllers\Slack\InteractionController;
-use App\Jobs\WarmBrandReportCache as WarmBrandReportCacheJob;
 use App\Models\Brand;
 use App\Models\Target;
 use App\Services\BrandReportCache;
+use App\Services\StoredAdReportService;
 use App\Services\Slack\SlackReportBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('index');
-})/*->middleware('auth.basic')*/->name('dashboard');
+})->middleware('auth.basic')->name('dashboard');
 
 Route::post('/brands/{brand}/duplicate-ad', function (Request $request, Brand $brand) {
     $validated = $request->validate([
@@ -127,7 +127,7 @@ Route::get('/brands/{brand}/settings', function (Brand $brand) {
     $brand->load(['targets']);
 
     return view('brand-settings', compact('brand'));
-})/*->middleware('auth.basic')*/->name('brand.settings');
+})->middleware('auth.basic')->name('brand.settings');
 
 Route::patch('/brands/{brand}/settings', function (Request $request, Brand $brand, BrandReportCache $brandReportCache) {
     $validated = $request->validate([
@@ -150,14 +150,17 @@ Route::patch('/brands/{brand}/settings', function (Request $request, Brand $bran
 Route::get('/brands/{brand}', function (
     Request $request,
     Brand $brand,
-    BrandReportCache $brandReportCache,
+    StoredAdReportService $storedAdReportService,
     SlackReportBuilder $slackReportBuilder,
 ) {
+    $timeframeDays = (int) $request->integer('days', 7);
+    $timeframeDays = in_array($timeframeDays, [7, 14, 30], true) ? $timeframeDays : 7;
     $brand->load(['targets']);
     $winnerAds = collect();
     $fetchedAds = collect();
     $scalingCampaigns = collect();
     $dailyTotals = collect();
+    $dataCoverage = null;
     $developmentCharts = [];
     $strategyInsights = [];
     $winnerAdsError = null;
@@ -165,47 +168,13 @@ Route::get('/brands/{brand}', function (
     $winnerAdsExpiresAt = null;
 
     try {
-        if ($request->boolean('refresh')) {
-            if ($brandReportCache->markWarming($brand)) {
-                WarmBrandReportCacheJob::dispatch($brand->id);
-            }
-        }
+        $reportData = $storedAdReportService->reportDataForBrand($brand, $timeframeDays);
 
-        $cachedWinnerAds = $brandReportCache->cached($brand);
-
-        if ($cachedWinnerAds === null) {
-            if ($brandReportCache->markWarming($brand)) {
-                WarmBrandReportCacheJob::dispatch($brand->id);
-            }
-
-            $winnerAdsError = $brandReportCache->isWarming($brand)
-                ? 'Report data is being prepared in the background. Please reload in a moment.'
-                : 'Report data is currently unavailable.';
-
-            return view('brand', compact(
-                'brand',
-                'dailyTotals',
-                'developmentCharts',
-                'fetchedAds',
-                'scalingCampaigns',
-                'strategyInsights',
-                'winnerAds',
-                'winnerAdsCachedAt',
-                'winnerAdsError',
-                'winnerAdsExpiresAt',
-            ));
-        }
-
-        if ($request->boolean('refresh')) {
-            session()->flash('status', $brandReportCache->isWarming($brand)
-                ? 'Queued a background refresh. Reload in a moment to see updated data.'
-                : 'Refresh is already in progress.');
-        }
-
-        $winnerAds = collect($cachedWinnerAds['winner_ads'] ?? []);
-        $fetchedAds = collect($cachedWinnerAds['fetched_ads'] ?? []);
-        $scalingCampaigns = collect($cachedWinnerAds['scaling_campaigns'] ?? []);
-        $dailyTotals = collect($cachedWinnerAds['daily_totals'] ?? []);
+        $winnerAds = collect($reportData['winner_ads'] ?? []);
+        $fetchedAds = collect($reportData['fetched_ads'] ?? []);
+        $scalingCampaigns = collect($reportData['scaling_campaigns'] ?? []);
+        $dailyTotals = collect($reportData['daily_totals'] ?? []);
+        $dataCoverage = $reportData['coverage'] ?? null;
         $strategyInsights = $slackReportBuilder->creativeStrategyInsights($fetchedAds);
         $developmentCharts = collect([
             ['title' => 'Spend', 'metric' => 'spend'],
@@ -291,19 +260,15 @@ Route::get('/brands/{brand}', function (
                 'max' => $maxValue,
             ];
         })->all();
-        $winnerAdsCachedAt = isset($cachedWinnerAds['cached_at'])
-            ? Carbon::parse($cachedWinnerAds['cached_at'])
-            : null;
-        $winnerAdsExpiresAt = isset($cachedWinnerAds['expires_at'])
-            ? Carbon::parse($cachedWinnerAds['expires_at'])
-            : null;
     } catch (\Throwable $throwable) {
         $winnerAdsError = $throwable->getMessage();
     }
 
     return view('brand', compact(
         'brand',
+        'timeframeDays',
         'dailyTotals',
+        'dataCoverage',
         'developmentCharts',
         'fetchedAds',
         'scalingCampaigns',

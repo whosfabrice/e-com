@@ -99,9 +99,9 @@ body {
     display: flex;
     flex-direction: column;
     font-family:
-        Helvetica, Arial, sans-serif,
-        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-        "Noto Color Emoji";
+        "SF Mono", "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace, "Apple Color Emoji",
+        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     font-size: 14px;
     line-height: 1.5;
     min-height: 100dvh;
@@ -127,7 +127,7 @@ body > header h1 {
     align-items: center;
     display: inline-flex;
     font-size: 20px;
-    font-weight: 400;
+    font-weight: 700;
     gap: 6px;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -135,12 +135,23 @@ body > header h1 {
     pointer-events: none;
 }
 
-body > header h1 i {
-    animation: blink-cursor 1s steps(1, end) infinite;
-    background: currentColor;
+body > header h1::after {
+    animation: blink steps(1) 1s infinite;
+    content: "█"; /* | _ █ */
     display: inline-block;
-    height: 18px;
-    width: 10px;
+    overflow: visible;
+    pointer-events: none;
+    width: 0;
+}
+
+@keyframes blink {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 
 body > header input {
@@ -222,18 +233,6 @@ body > header aside nav + nav {
     margin-top: var(--space-5);
 }
 
-@keyframes blink-cursor {
-    0%,
-    49% {
-        opacity: 1;
-    }
-
-    50%,
-    100% {
-        opacity: 0;
-    }
-}
-
 body > header aside h2 {
     font-size: 13px;
     font-weight: 400;
@@ -294,6 +293,10 @@ h1,
 h2,
 h3 {
     letter-spacing: 0.01em;
+}
+
+p {
+    margin: 10px 0 0;
 }
 
 a {
@@ -376,6 +379,11 @@ button {
     text-decoration: underline;
 }
 
+.report-shell > header nav .is-active {
+    color: var(--text);
+    text-decoration: underline;
+}
+
 .flash {
     background: #1f1f1f;
 }
@@ -391,13 +399,13 @@ button {
     margin-bottom: var(--space-3);
 }
 
-.report-shell > section:first-of-type > article + article,
+.report-media-buying > article + article,
 .settings-shell > section ul li + li,
 .settings-shell > section form + form {
     margin-top: var(--space-3);
 }
 
-.report-shell > section:first-of-type article {
+.report-media-buying article {
     background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
@@ -406,38 +414,38 @@ button {
     padding: var(--space-3);
 }
 
-.report-shell > section:first-of-type figure {
+.report-media-buying figure {
     margin: 0;
 }
 
-.report-shell > section:first-of-type figure img {
+.report-media-buying figure img {
     max-width: 180px;
 }
 
-.report-shell > section:first-of-type article > section {
+.report-media-buying article > section {
     display: grid;
     gap: var(--space-2);
 }
 
-.report-shell > section:first-of-type article h3 {
+.report-media-buying article h3 {
     font-size: 16px;
     font-weight: 400;
     line-height: 1.25;
 }
 
-.report-shell > section:first-of-type article h3 a {
+.report-media-buying article h3 a {
     text-decoration: none;
 }
 
-.report-shell > section:first-of-type article h3 a:hover {
+.report-media-buying article h3 a:hover {
     text-decoration: underline;
 }
 
-.report-shell > section:first-of-type article p {
+.report-media-buying article p {
     color: var(--muted);
 }
 
-.report-shell > section:first-of-type article form,
+.report-media-buying article form,
 .settings-shell form {
     align-items: end;
     display: flex;
@@ -445,7 +453,7 @@ button {
     gap: var(--space-2);
 }
 
-.report-shell > section:first-of-type article form label,
+.report-media-buying article form label,
 .settings-shell form label {
     display: grid;
     gap: 4px;
@@ -552,62 +560,62 @@ button {
     text-anchor: end;
 }
 
-.report-shell > section:last-child > section {
+.report-strategy > section {
     display: grid;
     gap: var(--space-3);
     margin-top: var(--space-3);
 }
 
-.report-shell > section:last-child article {
+.report-strategy article {
     background: var(--tile);
     border: 1px solid var(--soft-line);
     min-width: 0;
     padding: var(--space-3);
 }
 
-.report-shell > section:last-child article h3 {
+.report-strategy article h3 {
     font-size: 16px;
     font-weight: 400;
     margin-bottom: var(--space-2);
 }
 
-.report-shell > section:last-child article > section {
+.report-strategy article > section {
     max-width: 100%;
     min-width: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
 }
 
-.report-shell > section:last-child table {
+.report-strategy table {
     border-collapse: collapse;
     min-width: 460px;
     width: 100%;
 }
 
-.report-shell > section:last-child th,
-.report-shell > section:last-child td {
+.report-strategy th,
+.report-strategy td {
     padding: 8px 14px 8px 0;
     text-align: right;
     vertical-align: top;
 }
 
-.report-shell > section:last-child thead th {
+.report-strategy thead th {
     border-bottom: 1px solid var(--line);
     font-size: 13px;
     font-weight: 400;
 }
 
-.report-shell > section:last-child th:first-child,
-.report-shell > section:last-child td:first-child {
+.report-strategy th:first-child,
+.report-strategy td:first-child {
     text-align: left;
 }
 
-.report-shell > section:last-child th:last-child,
-.report-shell > section:last-child td:last-child {
+.report-strategy th:last-child,
+.report-strategy td:last-child {
     padding-right: 0;
 }
 
-.report-shell > section:last-child tbody th {
+.report-strategy tbody th {
     color: var(--muted);
     font-weight: 500;
 }
@@ -655,7 +663,7 @@ button {
 }
 
 @media (min-width: 900px) {
-    .report-shell > section:first-of-type article {
+    .report-media-buying article {
         grid-template-columns: 180px 1fr;
     }
 
@@ -663,7 +671,7 @@ button {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .report-shell > section:last-child > section {
+    .report-strategy > section {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }

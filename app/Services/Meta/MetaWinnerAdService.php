@@ -21,16 +21,17 @@ class MetaWinnerAdService
         return $this->reportDataForBrand($brand)['winner_ads'];
     }
 
-    public function reportDataForBrand(Brand $brand): array
+    public function reportDataForBrand(Brand $brand, int $days = 7): array
     {
         $targetCpa = $this->targetValueForBrand($brand, TargetMetric::Cpa);
         $targetPurchases = (int) $this->targetValueForBrand($brand, TargetMetric::Purchases);
         $scalingCampaigns = $this->fetchPhase4Campaigns($brand);
+        $until = Carbon::now('Europe/Berlin')->subDay()->toDateString();
+        $since = Carbon::now('Europe/Berlin')->subDays($days)->toDateString();
 
         $response = $this->metaGraphClient->get(
             sprintf('act_%s/insights', $brand->meta_ad_account_id),
             [
-                'date_preset' => 'last_7d',
                 'fields' => 'campaign_id,campaign_name,ad_id,ad_name,date_start,date_stop,spend,actions',
                 'filtering' => json_encode([
                     [
@@ -46,6 +47,10 @@ class MetaWinnerAdService
                 ], JSON_THROW_ON_ERROR),
                 'level' => 'ad',
                 'limit' => 500,
+                'time_range' => json_encode([
+                    'since' => $since,
+                    'until' => $until,
+                ], JSON_THROW_ON_ERROR),
                 'time_increment' => 1,
             ],
         );
@@ -60,7 +65,6 @@ class MetaWinnerAdService
                 'spend' => (float) ($ad['spend'] ?? 0),
                 'purchases' => $this->countPurchases($ad['actions'] ?? []),
             ])
-            ->reject(fn (array $ad): bool => str_starts_with($ad['ad_name'], '[KEEP OFF]'))
             ->values();
 
         $fetchedAds = $dailyRows
@@ -90,7 +94,7 @@ class MetaWinnerAdService
             ->values()
             ->values();
 
-        $dailyTotals = $this->buildDailyTotals($dailyRows);
+        $dailyTotals = $this->buildDailyTotals($dailyRows, $days);
 
         $phase4Ads = $this->fetchPhase4Ads($brand, $scalingCampaigns);
         $scaledCreativeIds = $phase4Ads
@@ -142,7 +146,7 @@ class MetaWinnerAdService
         ];
     }
 
-    protected function buildDailyTotals(Collection $dailyRows): Collection
+    protected function buildDailyTotals(Collection $dailyRows, int $days): Collection
     {
         $groupedByDate = $dailyRows
             ->groupBy('date')
@@ -157,7 +161,7 @@ class MetaWinnerAdService
                 ];
             });
 
-        return collect(range(7, 1))
+        return collect(range($days, 1))
             ->map(function (int $daysAgo) use ($groupedByDate): array {
                 $date = Carbon::now('Europe/Berlin')->subDays($daysAgo)->toDateString();
                 $dailyTotal = $groupedByDate->get($date, [
