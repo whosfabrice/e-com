@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Cache;
 
 class BrandReportCache
 {
+    public function warmingKeyForBrand(Brand $brand): string
+    {
+        return sprintf('brands.%s.winner_ads.warming', $brand->id);
+    }
+
     public function keyForBrand(Brand $brand): string
     {
         return sprintf('brands.%s.winner_ads', $brand->id);
@@ -46,6 +51,17 @@ class BrandReportCache
         return $payload;
     }
 
+    public function cached(Brand $brand): ?array
+    {
+        $payload = Cache::get($this->keyForBrand($brand));
+
+        if (! is_array($payload) || ! array_key_exists('daily_totals', $payload)) {
+            return null;
+        }
+
+        return $payload;
+    }
+
     public function refresh(Brand $brand): array
     {
         return $this->get($brand, true);
@@ -54,6 +70,21 @@ class BrandReportCache
     public function forget(Brand $brand): void
     {
         Cache::forget($this->keyForBrand($brand));
+    }
+
+    public function markWarming(Brand $brand, int $seconds = 300): bool
+    {
+        return Cache::add($this->warmingKeyForBrand($brand), true, now()->addSeconds($seconds));
+    }
+
+    public function clearWarming(Brand $brand): void
+    {
+        Cache::forget($this->warmingKeyForBrand($brand));
+    }
+
+    public function isWarming(Brand $brand): bool
+    {
+        return Cache::has($this->warmingKeyForBrand($brand));
     }
 
     protected function buildPayload(Brand $brand): array

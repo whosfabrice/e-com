@@ -4,10 +4,10 @@ use App\Enums\AdvertisingPlatform;
 use App\Enums\TargetMetric;
 use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Http\Controllers\Slack\InteractionController;
+use App\Jobs\WarmBrandReportCache as WarmBrandReportCacheJob;
 use App\Models\Brand;
 use App\Models\Target;
 use App\Services\BrandReportCache;
-use App\Services\Meta\MetaWinnerAdService;
 use App\Services\Slack\SlackReportBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -165,7 +165,42 @@ Route::get('/brands/{brand}', function (
     $winnerAdsExpiresAt = null;
 
     try {
-        $cachedWinnerAds = $brandReportCache->get($brand, $request->boolean('refresh'));
+        if ($request->boolean('refresh')) {
+            if ($brandReportCache->markWarming($brand)) {
+                WarmBrandReportCacheJob::dispatch($brand->id);
+            }
+        }
+
+        $cachedWinnerAds = $brandReportCache->cached($brand);
+
+        if ($cachedWinnerAds === null) {
+            if ($brandReportCache->markWarming($brand)) {
+                WarmBrandReportCacheJob::dispatch($brand->id);
+            }
+
+            $winnerAdsError = $brandReportCache->isWarming($brand)
+                ? 'Report data is being prepared in the background. Please reload in a moment.'
+                : 'Report data is currently unavailable.';
+
+            return view('brand', compact(
+                'brand',
+                'dailyTotals',
+                'developmentCharts',
+                'fetchedAds',
+                'scalingCampaigns',
+                'strategyInsights',
+                'winnerAds',
+                'winnerAdsCachedAt',
+                'winnerAdsError',
+                'winnerAdsExpiresAt',
+            ));
+        }
+
+        if ($request->boolean('refresh')) {
+            session()->flash('status', $brandReportCache->isWarming($brand)
+                ? 'Queued a background refresh. Reload in a moment to see updated data.'
+                : 'Refresh is already in progress.');
+        }
 
         $winnerAds = collect($cachedWinnerAds['winner_ads'] ?? []);
         $fetchedAds = collect($cachedWinnerAds['fetched_ads'] ?? []);

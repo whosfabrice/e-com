@@ -1,10 +1,12 @@
 :root {
-    --bg: #f5f3ee;
-    --surface: #fffdfa;
-    --text: #111;
-    --muted: #666057;
-    --line: #1b1b1b;
-    --soft-line: #d9d3ca;
+    --bg: #121212;
+    --main: #181818;
+    --surface: #1b1b1b;
+    --tile: #212121;
+    --text: #ffffff;
+    --muted: rgba(255, 255, 255, 0.7);
+    --line: #2b2b2b;
+    --soft-line: #313131;
     --space-1: 8px;
     --space-2: 12px;
     --space-3: 16px;
@@ -15,6 +17,17 @@
     --aside-w: 280px;
 }
 
+html[data-theme="light"] {
+    --bg: #f5f5f5;
+    --main: #ececec;
+    --surface: #ffffff;
+    --tile: #f0f0f0;
+    --text: #121212;
+    --muted: rgba(18, 18, 18, 0.7);
+    --line: #d0d0d0;
+    --soft-line: #dddddd;
+}
+
 html,
 body {
     box-sizing: border-box;
@@ -23,6 +36,55 @@ body {
     padding: 0;
     width: 100%;
     overflow: hidden;
+}
+
+html {
+    scrollbar-color: #f3f5f2 #181818;
+}
+
+html[data-theme="light"] {
+    scrollbar-color: #121212 #e8e8e8;
+}
+
+* {
+    scrollbar-color: #f3f5f2 #181818;
+    scrollbar-width: thin;
+}
+
+html[data-theme="light"] * {
+    scrollbar-color: #121212 #e8e8e8;
+}
+
+*::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #181818;
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-track {
+    background: #e8e8e8;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #f3f5f2;
+    border: 2px solid #181818;
+    border-radius: 999px;
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-thumb {
+    background: #121212;
+    border-color: #e8e8e8;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #ffffff;
+}
+
+html[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+    background: #000000;
 }
 
 *,
@@ -62,12 +124,23 @@ body > header {
 }
 
 body > header h1 {
+    align-items: center;
+    display: inline-flex;
     font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.04em;
+    font-weight: 400;
+    gap: 6px;
+    letter-spacing: 0.02em;
     line-height: 1;
     margin: 0;
     pointer-events: none;
+}
+
+body > header h1 i {
+    animation: blink-cursor 1s steps(1, end) infinite;
+    background: currentColor;
+    display: inline-block;
+    height: 18px;
+    width: 10px;
 }
 
 body > header input {
@@ -94,6 +167,39 @@ body > header label[for="hamburger"] svg {
     width: 24px;
 }
 
+body > header #theme-toggle {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    display: inline-flex;
+    height: 36px;
+    justify-content: center;
+    padding: 0;
+    position: absolute;
+    right: var(--space-3);
+    top: 14px;
+    width: 36px;
+}
+
+body > header #theme-toggle .theme-icon {
+    display: block;
+    height: 22px;
+    width: 22px;
+}
+
+body > header #theme-toggle .theme-icon-sun {
+    display: none;
+}
+
+html[data-theme="light"] body > header #theme-toggle .theme-icon-moon {
+    display: none;
+}
+
+html[data-theme="light"] body > header #theme-toggle .theme-icon-sun {
+    display: block;
+}
+
 body > header aside {
     background: var(--surface);
     border-right: 1px solid var(--line);
@@ -105,6 +211,7 @@ body > header aside {
     transform: translate(calc(-1 * var(--aside-w)), 0);
     transition: transform 0.18s ease;
     width: var(--aside-w);
+    z-index: 3;
 }
 
 body > header input:checked ~ aside {
@@ -115,8 +222,21 @@ body > header aside nav + nav {
     margin-top: var(--space-5);
 }
 
+@keyframes blink-cursor {
+    0%,
+    49% {
+        opacity: 1;
+    }
+
+    50%,
+    100% {
+        opacity: 0;
+    }
+}
+
 body > header aside h2 {
     font-size: 13px;
+    font-weight: 400;
     letter-spacing: 0.04em;
     margin: 0 0 var(--space-2);
     text-transform: uppercase;
@@ -143,7 +263,7 @@ body > header aside a:hover {
 }
 
 main {
-    background: var(--bg);
+    background: var(--main);
     flex: 1;
     min-height: 0;
     overflow: auto;
@@ -173,7 +293,7 @@ p {
 h1,
 h2,
 h3 {
-    letter-spacing: -0.04em;
+    letter-spacing: 0.01em;
 }
 
 a {
@@ -191,7 +311,7 @@ input,
 select,
 button {
     appearance: none;
-    background: #fff;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 0;
     color: inherit;
@@ -200,8 +320,8 @@ button {
 }
 
 button {
-    background: var(--text);
-    color: var(--surface);
+    background: #2a2a2a;
+    color: var(--text);
     cursor: pointer;
 }
 
@@ -235,6 +355,7 @@ button {
 .report-shell > header h1,
 .settings-shell > header h1 {
     font-size: 28px;
+    font-weight: 400;
     line-height: 1.05;
 }
 
@@ -256,16 +377,17 @@ button {
 }
 
 .flash {
-    background: #f2efe8;
+    background: #1f1f1f;
 }
 
 .error {
-    color: #a40000;
+    color: #ff8f8f;
 }
 
 .report-shell > section > h2,
 .settings-shell > section > h2 {
     font-size: 24px;
+    font-weight: 400;
     margin-bottom: var(--space-3);
 }
 
@@ -276,7 +398,7 @@ button {
 }
 
 .report-shell > section:first-of-type article {
-    background: #fff;
+    background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
     gap: var(--space-3);
@@ -299,6 +421,7 @@ button {
 
 .report-shell > section:first-of-type article h3 {
     font-size: 16px;
+    font-weight: 400;
     line-height: 1.25;
 }
 
@@ -335,11 +458,19 @@ button {
 }
 
 .development-charts article {
-    background: #fff;
+    background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
     gap: var(--space-2);
+    overflow: visible;
     padding: var(--space-3);
+    position: relative;
+    z-index: 0;
+}
+
+.development-charts article:hover,
+.development-charts article:focus-within {
+    z-index: 2;
 }
 
 .development-charts article p {
@@ -399,11 +530,11 @@ button {
 }
 
 .development-charts svg .chart-tooltip-bg {
-    fill: var(--text);
+    fill: #ffffff;
 }
 
 .development-charts svg .chart-tooltip {
-    fill: var(--surface);
+    fill: #121212;
     font-family: inherit;
     font-size: 14px;
     text-anchor: middle;
@@ -428,7 +559,7 @@ button {
 }
 
 .report-shell > section:last-child article {
-    background: #fff;
+    background: var(--tile);
     border: 1px solid var(--soft-line);
     min-width: 0;
     padding: var(--space-3);
@@ -436,6 +567,7 @@ button {
 
 .report-shell > section:last-child article h3 {
     font-size: 16px;
+    font-weight: 400;
     margin-bottom: var(--space-2);
 }
 
@@ -462,7 +594,7 @@ button {
 .report-shell > section:last-child thead th {
     border-bottom: 1px solid var(--line);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 400;
 }
 
 .report-shell > section:last-child th:first-child,
@@ -502,7 +634,7 @@ button {
 }
 
 .settings-shell li {
-    background: #fff;
+    background: var(--tile);
     border: 1px solid var(--soft-line);
     padding: var(--space-3);
 }
@@ -519,22 +651,6 @@ button {
 
     .report-shell {
         gap: var(--space-5);
-    }
-}
-
-@media (min-width: 750px) {
-    main {
-        margin-left: var(--aside-w);
-        width: calc(100% - var(--aside-w));
-    }
-
-    body > header aside {
-        transform: none;
-    }
-
-    body > header input,
-    body > header label[for="hamburger"] {
-        display: none;
     }
 }
 
