@@ -160,13 +160,16 @@
             @endif
         </section>
 
-        @if ($dataCoverage)
-            <p>
-                <a href="{{ route('brand.settings', $brand) }}">Settings</a> - Data coverage: {{ $dataCoverage['from'] }} to {{ $dataCoverage['to'] }}.
+        <p>
+            <a href="{{ route('brand.settings', $brand) }}">Settings</a> - Data coverage:
+            @if ($dataCoverage)
+                {{ $dataCoverage['from'] }} to {{ $dataCoverage['to'] }}.
                 @if (! empty($dataCoverage['missing_ranges']))
                     Missing: {{ implode(', ', $dataCoverage['missing_ranges']) }}.
                 @endif
-            </p>
-        @endif
+            @else
+                none.
+            @endif
+        </p>
     </section>
 @endsection
