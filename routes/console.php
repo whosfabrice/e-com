@@ -35,7 +35,7 @@ Schedule::command(SyncMetaWinnerAdThumbnails::class)
     ->timezone('Europe/Berlin')
     ->withoutOverlapping();
 
-Schedule::command(SendMediaBuyingReport::class)
+/*Schedule::command(SendMediaBuyingReport::class)
     ->weekdays()
     ->at('08:00')
-    ->timezone('Europe/Berlin');
+    ->timezone('Europe/Berlin');*/
