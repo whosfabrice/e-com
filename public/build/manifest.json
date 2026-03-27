@@ -1,12 +1,34 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-CAYCIN-l.css",
+    "file": "assets/app-TJoWQS7f.css",
     "name": "app",
     "names": [
       "app.css"
     ],
     "src": "resources/css/app.css",
-    "isEntry": true
+    "isEntry": true,
+    "assets": [
+      "assets/courier-prime-v9-latin-regular-CDjTZLco.woff2",
+      "assets/courier-prime-v9-latin-regular-O-BSuB-I.ttf",
+      "assets/courier-prime-v9-latin-700-CxaI4pPW.woff2",
+      "assets/courier-prime-v9-latin-700-DWYuLaRP.ttf"
+    ]
+  },
+  "resources/fonts/courier-prime-v9-latin-700.ttf": {
+    "file": "assets/courier-prime-v9-latin-700-DWYuLaRP.ttf",
+    "src": "resources/fonts/courier-prime-v9-latin-700.ttf"
+  },
+  "resources/fonts/courier-prime-v9-latin-700.woff2": {
+    "file": "assets/courier-prime-v9-latin-700-CxaI4pPW.woff2",
+    "src": "resources/fonts/courier-prime-v9-latin-700.woff2"
+  },
+  "resources/fonts/courier-prime-v9-latin-regular.ttf": {
+    "file": "assets/courier-prime-v9-latin-regular-O-BSuB-I.ttf",
+    "src": "resources/fonts/courier-prime-v9-latin-regular.ttf"
+  },
+  "resources/fonts/courier-prime-v9-latin-regular.woff2": {
+    "file": "assets/courier-prime-v9-latin-regular-CDjTZLco.woff2",
+    "src": "resources/fonts/courier-prime-v9-latin-regular.woff2"
   },
   "resources/js/app.js": {
     "file": "assets/app-3K1fL3TJ.js",

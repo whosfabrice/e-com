@@ -33,20 +33,26 @@
                 <section class="development-charts">
                     @foreach ($developmentCharts as $chart)
                         <article>
-                            <h3>{{ $chart['title'] }}</h3>
-                            <p>
-                                @if ($chart['metric'] === 'spend' || $chart['metric'] === 'cpa')
-                                    {{ number_format($chart['total'], 2, ',', '.') }}€
-                                @else
-                                    {{ number_format($chart['total'], 0, ',', '.') }}
-                                @endif
-                            </p>
+                            <header>
+                                <h3>{{ $chart['title'] }}</h3>
+                                <p>
+                                    <span class="metric-total">
+                                        @if ($chart['metric'] === 'spend' || $chart['metric'] === 'cpa')
+                                            {{ number_format($chart['total'], 2, ',', '.') }}€
+                                        @else
+                                            {{ number_format($chart['total'], 0, ',', '.') }}
+                                        @endif
+                                    </span>
+                                    <small @class(["metric-change", "is-{$chart['change']['direction']}"])>{{ $chart['change']['label'] }}</small>
+                                </p>
+                            </header>
 
                             <svg aria-label="{{ $chart['title'] }} over the last 7 days" role="img" viewBox="0 0 {{ $chart['width'] }} {{ $chart['height'] }}">
                                 @foreach ($chart['axis_labels'] as $axisLabel)
                                     <line x1="{{ $chart['plot_x_start'] }}" x2="{{ $chart['width'] }}" y1="{{ $axisLabel['y'] - 4 }}" y2="{{ $axisLabel['y'] - 4 }}"></line>
                                     <text class="chart-axis-label" x="{{ $axisLabel['x'] }}" y="{{ $axisLabel['y'] }}">{{ $axisLabel['text'] }}</text>
                                 @endforeach
+                                <line class="chart-average-line" x1="{{ $chart['plot_x_start'] }}" x2="{{ $chart['plot_x_end'] }}" y1="{{ $chart['average']['y'] }}" y2="{{ $chart['average']['y'] }}"></line>
                                 <polyline points="{{ $chart['points'] }}"></polyline>
 
                                 @foreach ($chart['point_data'] as $point)
@@ -143,13 +149,28 @@
                                     <tbody>
                                         @foreach ($dimension['rows'] as $row)
                                             <tr @class(['meets-target' => ! empty($row['meets_target'])])>
-                                                <th scope="row">{{ $row['value'] }}</th>
+                                                <th scope="row">
+                                                    {{ $row['value'] }}
+                                                    <small>{{ number_format($row['spend_share_percent'] ?? 0, 1, ',', '.') }}%</small>
+                                                </th>
                                                 <td>
-                                                    {{ number_format($row['spend'], 2, ',', '.') }}€
-                                                    <small @class(['meets-target' => ! empty($row['meets_target'])])>{{ number_format($row['spend_share_percent'] ?? 0, 1, ',', '.') }}%</small>
+                                                    <span class="kpi-value">{{ number_format($row['spend'], 2, ',', '.') }}€</span>
+                                                    @if (! empty($row['spend_change']['label']))
+                                                        <small @class(["metric-change", "is-{$row['spend_change']['direction']}"])>{{ $row['spend_change']['label'] }}</small>
+                                                    @endif
                                                 </td>
-                                                <td>{{ $row['purchases'] }}</td>
-                                                <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
+                                                <td>
+                                                    <span class="kpi-value">{{ $row['purchases'] }}</span>
+                                                    @if (! empty($row['purchases_change']['label']))
+                                                        <small @class(["metric-change", "is-{$row['purchases_change']['direction']}"])>{{ $row['purchases_change']['label'] }}</small>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <span class="kpi-value">{{ number_format($row['cpa'], 2, ',', '.') }}€</span>
+                                                    @if (! empty($row['cpa_change']['label']))
+                                                        <small @class(["metric-change", "is-{$row['cpa_change']['direction']}"])>{{ $row['cpa_change']['label'] }}</small>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>

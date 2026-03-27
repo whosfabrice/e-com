@@ -1,3 +1,23 @@
+@font-face {
+    font-display: swap;
+    font-family: "Courier Prime";
+    font-style: normal;
+    font-weight: 400;
+    src:
+        url("../fonts/courier-prime-v9-latin-regular.woff2") format("woff2"),
+        url("../fonts/courier-prime-v9-latin-regular.ttf") format("truetype");
+}
+
+@font-face {
+    font-display: swap;
+    font-family: "Courier Prime";
+    font-style: normal;
+    font-weight: 700;
+    src:
+        url("../fonts/courier-prime-v9-latin-700.woff2") format("woff2"),
+        url("../fonts/courier-prime-v9-latin-700.ttf") format("truetype");
+}
+
 :root {
     --aside-w: 280px;
     --bg: #121212;
@@ -5,7 +25,7 @@
     --header-h: 56px;
     --line: #2b2b2b;
     --main: #181818;
-    --muted: rgba(255, 255, 255, 0.7);
+    --muted: rgba(243, 245, 242, 0.72);
     --soft-line: #313131;
     --space-1: 6px;
     --space-2: 10px;
@@ -13,7 +33,7 @@
     --space-4: 18px;
     --space-5: 24px;
     --surface: #1b1b1b;
-    --text: #ffffff;
+    --text: #f3f5f2;
     --tile: #212121;
 }
 
@@ -21,7 +41,7 @@ html[data-theme="light"] {
     --bg: #f5f5f5;
     --line: #d0d0d0;
     --main: #ececec;
-    --muted: rgba(18, 18, 18, 0.7);
+    --muted: rgba(18, 18, 18, 0.72);
     --soft-line: #dddddd;
     --surface: #ffffff;
     --text: #121212;
@@ -99,8 +119,7 @@ body {
     display: flex;
     flex-direction: column;
     font-family:
-        "SF Mono", "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace, "Apple Color Emoji",
+        "Courier Prime", "Courier New", Courier, monospace, "Apple Color Emoji",
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     font-size: 12px;
     line-height: 1.5;
@@ -515,9 +534,9 @@ button {
     background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
-    gap: 12px;
+    gap: 8px;
     overflow: visible;
-    padding: 22px 24px 20px;
+    padding: 18px 20px 16px;
     position: relative;
     z-index: 0;
 }
@@ -525,6 +544,13 @@ button {
 .development-charts article:hover,
 .development-charts article:focus-within {
     z-index: 2;
+}
+
+.development-charts article > header {
+    align-items: start;
+    display: grid;
+    gap: 6px 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .development-charts article h3 {
@@ -535,19 +561,46 @@ button {
 
 .development-charts article p {
     color: var(--muted);
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+    display: grid;
+    gap: 2px;
     font-size: 12px;
     line-height: 1;
     margin: 0;
+    text-align: right;
 }
 
 .development-charts article p small {
     display: inline;
-    font-size: 11px;
+    font-size: 9px;
     margin-top: 0;
     white-space: nowrap;
+}
+
+.development-charts article p .metric-total {
+    display: block;
+}
+
+.development-charts article p .metric-change.is-up {
+    color: #6ddf7a;
+}
+
+.development-charts article p .metric-change.is-down {
+    color: #ff7a7a;
+}
+
+table .metric-change.is-up {
+    color: #6ddf7a;
+}
+
+table .metric-change.is-down {
+    color: #ff7a7a;
+}
+
+.report-strategy td .metric-change {
+    display: block;
+    margin-left: 0;
+    min-width: 0;
+    text-align: inherit;
 }
 
 .development-charts svg {
@@ -560,6 +613,12 @@ button {
 .development-charts svg line {
     stroke: var(--soft-line);
     stroke-width: 1;
+}
+
+.development-charts svg .chart-average-line {
+    stroke: color-mix(in srgb, var(--text) 45%, transparent);
+    stroke-dasharray: 5 5;
+    stroke-width: 1.5;
 }
 
 .development-charts svg polyline {
@@ -679,24 +738,22 @@ button {
     font-weight: 500;
 }
 
+.report-strategy tbody th small {
+    color: var(--muted);
+    display: block;
+    font-size: 9px;
+    margin-top: 0;
+}
+
 .report-strategy td small {
     color: var(--muted);
     display: inline-block;
-    font-size: 10px;
+    font-size: 9px;
     font-variant-numeric: tabular-nums;
     margin-left: 6px;
+    margin-top: 0;
     min-width: 4.5ch;
     text-align: right;
-}
-
-.report-strategy tbody tr.meets-target {
-    background: rgba(73, 214, 95, 0.08);
-}
-
-.report-strategy tbody tr.meets-target th,
-.report-strategy tbody tr.meets-target td,
-.report-strategy td small.meets-target {
-    color: #7ae18b;
 }
 
 .settings-shell fieldset {
@@ -788,6 +845,14 @@ button {
     .report-media-buying article form button,
     .report-media-buying article form select {
         width: 100%;
+    }
+
+    .development-charts article > header {
+        grid-template-columns: 1fr;
+    }
+
+    .development-charts article p {
+        text-align: left;
     }
 
     .development-charts article {

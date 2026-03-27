@@ -4,6 +4,7 @@ use App\Enums\AdvertisingPlatform;
 use App\Enums\TargetMetric;
 use App\Jobs\DuplicateMetaAdToCampaign;
 use App\Http\Controllers\Slack\InteractionController;
+use App\Models\AdDailyEntity;
 use App\Models\Brand;
 use App\Models\Target;
 use App\Services\BrandReportCache;
@@ -166,6 +167,26 @@ Route::get('/brands/{brand}', function (
     $winnerAdsError = null;
     $winnerAdsCachedAt = null;
     $winnerAdsExpiresAt = null;
+    $metricValueForPeriod = function (Brand $brand, string $from, string $to, string $metric): float {
+        $entities = AdDailyEntity::query()
+            ->where('brand_id', $brand->id)
+            ->where('platform', AdvertisingPlatform::Meta->value)
+            ->whereBetween('date', [$from, $to])
+            ->with(['metrics' => fn ($query) => $query
+                ->where('source', 'meta')
+                ->whereIn('metric', ['spend', 'purchases'])])
+            ->get();
+
+        $spend = (float) $entities->sum(fn (AdDailyEntity $entity): float => (float) ($entity->metrics->firstWhere('metric', 'spend')?->value ?? 0));
+        $purchases = (float) $entities->sum(fn (AdDailyEntity $entity): float => (float) ($entity->metrics->firstWhere('metric', 'purchases')?->value ?? 0));
+
+        return match ($metric) {
+            'spend' => round($spend, 2),
+            'purchases' => (int) $purchases,
+            'cpa' => $purchases > 0 ? round($spend / $purchases, 2) : 0.0,
+            default => 0.0,
+        };
+    };
     $niceChartMax = function (float $value): float {
         if ($value <= 0) {
             return 1.0;
@@ -214,27 +235,76 @@ Route::get('/brands/{brand}', function (
         $metaTargets = $brand->targets->where('platform', AdvertisingPlatform::Meta->value);
         $targetCpa = (float) ($metaTargets->firstWhere('metric', TargetMetric::Cpa->value)?->value ?? 0);
         $targetPurchases = (int) ($metaTargets->firstWhere('metric', TargetMetric::Purchases->value)?->value ?? 0);
+        $previousSince = Carbon::now('Europe/Berlin')->subDays($timeframeDays * 2)->toDateString();
+        $previousUntil = Carbon::now('Europe/Berlin')->subDays($timeframeDays + 1)->toDateString();
+        $previousFetchedAds = $storedAdReportService->fetchedAdsForBrandBetween($brand, $previousSince, $previousUntil);
+        $previousStrategyByDimension = collect($slackReportBuilder->creativeStrategyInsights($previousFetchedAds))
+            ->mapWithKeys(fn (array $dimension): array => [
+                $dimension['title'] => collect($dimension['rows'] ?? [])
+                    ->mapWithKeys(fn (array $row): array => [$row['value'] => $row]),
+            ]);
+        $changeData = function (float $current, ?float $previous, bool $inverse = false): array {
+            if ($previous === null || $previous <= 0) {
+                return ['direction' => 'neutral', 'label' => ''];
+            }
+
+            $changePercent = round((($current - $previous) / $previous) * 100, 1);
+            $direction = $changePercent == 0.0
+                ? 'neutral'
+                : ($inverse
+                    ? ($changePercent < 0 ? 'up' : 'down')
+                    : ($changePercent > 0 ? 'up' : 'down'));
+
+            return [
+                'direction' => $direction,
+                'label' => match (true) {
+                    $changePercent > 0 => '↑'.number_format(abs($changePercent), 1, ',', '.').'%',
+                    $changePercent < 0 => '↓'.number_format(abs($changePercent), 1, ',', '.').'%',
+                    default => '•0,0%',
+                },
+            ];
+        };
         $strategyInsights = collect($slackReportBuilder->creativeStrategyInsights($fetchedAds))
-            ->map(function (array $dimension) use ($targetCpa, $targetPurchases): array {
+            ->map(function (array $dimension) use ($changeData, $previousStrategyByDimension, $targetCpa, $targetPurchases): array {
+                $previousRows = $previousStrategyByDimension->get($dimension['title'], collect());
+
                 return [
                     ...$dimension,
                     'rows' => collect($dimension['rows'] ?? [])
-                        ->map(fn (array $row): array => [
-                            ...$row,
-                            'meets_target' => $targetCpa > 0
-                                && $targetPurchases > 0
-                                && (int) ($row['purchases'] ?? 0) >= $targetPurchases
-                                && (float) ($row['cpa'] ?? 0) <= $targetCpa,
-                        ])
+                        ->map(function (array $row) use ($changeData, $previousRows, $targetCpa, $targetPurchases): array {
+                            $previousRow = $previousRows->get($row['value']);
+
+                            return [
+                                ...$row,
+                                'meets_target' => $targetCpa > 0
+                                    && $targetPurchases > 0
+                                    && (int) ($row['purchases'] ?? 0) >= $targetPurchases
+                                    && (float) ($row['cpa'] ?? 0) <= $targetCpa,
+                                'spend_change' => $changeData((float) ($row['spend'] ?? 0), isset($previousRow['spend']) ? (float) $previousRow['spend'] : null),
+                                'purchases_change' => $changeData((float) ($row['purchases'] ?? 0), isset($previousRow['purchases']) ? (float) $previousRow['purchases'] : null),
+                                'cpa_change' => $changeData((float) ($row['cpa'] ?? 0), isset($previousRow['cpa']) ? (float) $previousRow['cpa'] : null, true),
+                            ];
+                        })
                         ->all(),
                 ];
             })
             ->all();
+        $currentUntil = Carbon::now('Europe/Berlin')->subDay()->toDateString();
         $developmentCharts = collect([
             ['title' => 'Spend', 'metric' => 'spend'],
             ['title' => 'Purchases', 'metric' => 'purchases'],
             ['title' => 'CPA', 'metric' => 'cpa'],
-        ])->map(function (array $chart) use ($dailyTotals, $niceChartMax, $formatChartAxisLabel): array {
+        ])->map(function (array $chart) use (
+            $brand,
+            $currentUntil,
+            $dailyTotals,
+            $formatChartAxisLabel,
+            $metricValueForPeriod,
+            $niceChartMax,
+            $previousSince,
+            $previousUntil,
+            $timeframeDays,
+        ): array {
             $values = $dailyTotals->pluck($chart['metric'])->map(fn (mixed $value): float => (float) $value)->values();
             $width = 640;
             $height = 180;
@@ -248,7 +318,13 @@ Route::get('/brands/{brand}', function (
             $rawMaxValue = max((float) ($values->max() ?? 0), 1.0);
             $maxValue = $niceChartMax($rawMaxValue);
             $minValue = 0.0;
+            $averageValue = (float) $values->avg();
             $xStep = $values->count() > 1 ? $plotWidth / ($values->count() - 1) : 0.0;
+            $averageY = $paddingTop + $plotHeight;
+
+            if ($maxValue > $minValue) {
+                $averageY = $paddingTop + $plotHeight - ((($averageValue - $minValue) / ($maxValue - $minValue)) * $plotHeight);
+            }
 
             $pointData = $values
                 ->map(function (float $value, int $index) use ($paddingLeft, $paddingTop, $plotHeight, $maxValue, $minValue, $xStep): array {
@@ -265,12 +341,28 @@ Route::get('/brands/{brand}', function (
                     ];
                 })
                 ->values();
+            $currentTotal = match ($chart['metric']) {
+                'cpa' => (float) (($dailyTotals->sum('purchases') > 0)
+                    ? round($dailyTotals->sum('spend') / $dailyTotals->sum('purchases'), 2)
+                    : 0),
+                default => (float) $values->sum(),
+            };
+            $previousTotal = $metricValueForPeriod($brand, $previousSince, $previousUntil, $chart['metric']);
+            $changePercent = $previousTotal > 0
+                ? round((($currentTotal - $previousTotal) / $previousTotal) * 100, 1)
+                : null;
+            $changeDirection = $changePercent === null || $changePercent == 0.0
+                ? 'neutral'
+                : ($chart['metric'] === 'cpa'
+                    ? ($changePercent < 0 ? 'up' : 'down')
+                    : ($changePercent > 0 ? 'up' : 'down'));
 
             return [
                 ...$chart,
                 'width' => $width,
                 'height' => $height,
                 'plot_x_start' => $paddingLeft,
+                'plot_x_end' => $width - $paddingRight,
                 'axis_labels' => [
                     [
                         'x' => $axisLabelX,
@@ -302,12 +394,20 @@ Route::get('/brands/{brand}', function (
                     ];
                 })->all(),
                 'values' => $values->all(),
-                'total' => match ($chart['metric']) {
-                    'cpa' => (float) (($dailyTotals->sum('purchases') > 0)
-                        ? round($dailyTotals->sum('spend') / $dailyTotals->sum('purchases'), 2)
-                        : 0),
-                    default => (float) $values->sum(),
-                },
+                'average' => [
+                    'value' => $averageValue,
+                    'y' => round($averageY, 2),
+                ],
+                'total' => $currentTotal,
+                'change' => [
+                    'direction' => $changeDirection,
+                    'label' => match (true) {
+                        $changePercent === null => "vs prev {$timeframeDays}d",
+                        $changePercent > 0 => '↑'.number_format(abs($changePercent), 1, ',', '.').'%',
+                        $changePercent < 0 => '↓'.number_format(abs($changePercent), 1, ',', '.').'%',
+                        default => '•0,0%',
+                    },
+                ],
                 'max' => $maxValue,
             ];
         })->all();

@@ -18,14 +18,7 @@ class StoredAdReportService
         $until = Carbon::now('Europe/Berlin')->subDay()->toDateString();
         $since = Carbon::now('Europe/Berlin')->subDays($days)->toDateString();
 
-        $entities = AdDailyEntity::query()
-            ->where('brand_id', $brand->id)
-            ->where('platform', AdvertisingPlatform::Meta->value)
-            ->whereBetween('date', [$since, $until])
-            ->with(['metrics' => fn ($query) => $query
-                ->where('source', 'meta')
-                ->whereIn('metric', ['spend', 'purchases'])])
-            ->get();
+        $entities = $this->entitiesForBrandBetween($brand, $since, $until);
         $storedPhase4Creatives = $this->storedPhase4Creatives($brand);
 
         $dailyRows = $entities
@@ -63,6 +56,39 @@ class StoredAdReportService
             'daily_totals' => $dailyTotals,
             'coverage' => $coverage,
         ];
+    }
+
+    public function fetchedAdsForBrandBetween(Brand $brand, string $since, string $until): Collection
+    {
+        $entities = $this->entitiesForBrandBetween($brand, $since, $until);
+
+        $dailyRows = $entities
+            ->map(fn (AdDailyEntity $entity): array => [
+                'date' => $entity->date->toDateString(),
+                'ad_id' => $entity->ad_id,
+                'ad_name' => $entity->ad_name,
+                'campaign_id' => $entity->campaign_id ?? '',
+                'campaign_name' => $entity->campaign_name ?? '',
+                'creative_id' => $entity->creative_id,
+                'thumbnail_url' => $entity->thumbnail_url,
+                'spend' => $this->metricValue($entity, 'spend'),
+                'purchases' => (int) $this->metricValue($entity, 'purchases'),
+            ])
+            ->values();
+
+        return $this->buildFetchedAds($brand, $dailyRows);
+    }
+
+    protected function entitiesForBrandBetween(Brand $brand, string $since, string $until): Collection
+    {
+        return AdDailyEntity::query()
+            ->where('brand_id', $brand->id)
+            ->where('platform', AdvertisingPlatform::Meta->value)
+            ->whereBetween('date', [$since, $until])
+            ->with(['metrics' => fn ($query) => $query
+                ->where('source', 'meta')
+                ->whereIn('metric', ['spend', 'purchases'])])
+            ->get();
     }
 
     protected function buildFetchedAds(Brand $brand, Collection $dailyRows): Collection
