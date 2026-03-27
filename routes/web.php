@@ -402,7 +402,7 @@ Route::get('/brands/{brand}', function (
                 'change' => [
                     'direction' => $changeDirection,
                     'label' => match (true) {
-                        $changePercent === null => "vs prev {$timeframeDays}d",
+                        $changePercent === null => '',
                         $changePercent > 0 => '↑'.number_format(abs($changePercent), 1, ',', '.').'%',
                         $changePercent < 0 => '↓'.number_format(abs($changePercent), 1, ',', '.').'%',
                         default => '•0,0%',
