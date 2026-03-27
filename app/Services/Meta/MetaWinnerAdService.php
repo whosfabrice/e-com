@@ -21,6 +21,23 @@ class MetaWinnerAdService
         return $this->reportDataForBrand($brand)['winner_ads'];
     }
 
+    public function enrichAdsWithCreativeDetails(Brand $brand, Collection $ads): Collection
+    {
+        if ($ads->isEmpty()) {
+            return collect();
+        }
+
+        $adDetails = $this->fetchAdDetails($brand, $ads);
+
+        return $ads
+            ->map(fn (array $ad): array => [
+                ...$ad,
+                'creative_id' => $adDetails[$ad['ad_id']]['creative_id'] ?? null,
+                'thumbnail_url' => $adDetails[$ad['ad_id']]['thumbnail_url'] ?? null,
+            ])
+            ->values();
+    }
+
     public function reportDataForBrand(Brand $brand, int $days = 7): array
     {
         $targetCpa = $this->targetValueForBrand($brand, TargetMetric::Cpa);
@@ -128,15 +145,8 @@ class MetaWinnerAdService
             ];
         }
 
-        $adDetails = $this->fetchAdDetails($winnerAds->pluck('ad_id')->all());
-
         return [
-            'winner_ads' => $winnerAds
-            ->map(fn (array $winnerAd): array => [
-                ...$winnerAd,
-                'creative_id' => $adDetails[$winnerAd['ad_id']]['creative_id'] ?? null,
-                'thumbnail_url' => $adDetails[$winnerAd['ad_id']]['thumbnail_url'] ?? null,
-            ])
+            'winner_ads' => $this->enrichAdsWithCreativeDetails($brand, $winnerAds)
             ->reject(fn (array $winnerAd): bool => in_array($winnerAd['creative_id'], $scaledCreativeIds, true))
             ->sortByDesc('spend')
             ->values(),
@@ -180,20 +190,32 @@ class MetaWinnerAdService
             ->values();
     }
 
-    protected function fetchAdDetails(array $adIds): array
+    protected function fetchAdDetails(Brand $brand, Collection $ads): array
     {
-        $response = $this->metaGraphClient->get('', [
-            'ids' => implode(',', $adIds),
-            'fields' => 'creative{id,thumbnail_url}',
-        ]);
+        $requestedAdIds = $ads
+            ->pluck('ad_id')
+            ->filter(fn (mixed $adId): bool => is_string($adId) && $adId !== '')
+            ->unique()
+            ->values();
 
-        return collect($response)
-            ->mapWithKeys(fn (array $ad, string $adId): array => [
-                $adId => [
-                    'creative_id' => $this->normalizeMetaId(data_get($ad, 'creative.id')),
-                    'thumbnail_url' => data_get($ad, 'creative.thumbnail_url'),
-                ],
-            ])
+        if ($requestedAdIds->isEmpty()) {
+            return [];
+        }
+
+        return $requestedAdIds
+            ->mapWithKeys(function (string $adId): array {
+                $response = $this->metaGraphClient->get($adId, [
+                    'fields' => 'id,name,creative{id,thumbnail_url}',
+                ]);
+
+                return [
+                    $adId => [
+                        'creative_id' => $this->normalizeMetaId(data_get($response, 'creative.id')),
+                        'thumbnail_url' => data_get($response, 'creative.thumbnail_url'),
+                    ],
+                ];
+            })
+            ->filter(fn (array $details, string $adId): bool => $adId !== '')
             ->all();
     }
 
@@ -287,8 +309,10 @@ class MetaWinnerAdService
 
     protected function countPurchases(array $actions): int
     {
-        $purchaseAction = collect($actions)->firstWhere('action_type', 'purchase');
-
-        return (int) ($purchaseAction['value'] ?? 0);
+        return (int) collect($actions)
+            ->filter(function (array $action): bool {
+                return (string) ($action['action_type'] ?? '') === 'omni_purchase';
+            })
+            ->sum(fn (array $action): int => (int) ($action['value'] ?? 0));
     }
 }

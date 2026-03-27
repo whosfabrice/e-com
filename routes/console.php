@@ -3,6 +3,8 @@
 use App\Console\Commands\PruneMetaDaily;
 use App\Console\Commands\SendMediaBuyingReport;
 use App\Console\Commands\SyncMetaDaily;
+use App\Console\Commands\SyncMetaPhase4Creatives;
+use App\Console\Commands\SyncMetaWinnerAdThumbnails;
 use App\Console\Commands\WarmBrandReportCache;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -20,6 +22,16 @@ Schedule::command(SyncMetaDaily::class, ['--days' => 3])
 Schedule::command(SyncMetaDaily::class, ['--days' => 7])
     ->weekdays()
     ->at('07:45')
+    ->timezone('Europe/Berlin')
+    ->withoutOverlapping();
+
+Schedule::command(SyncMetaPhase4Creatives::class)
+    ->dailyAt('07:50')
+    ->timezone('Europe/Berlin')
+    ->withoutOverlapping();
+
+Schedule::command(SyncMetaWinnerAdThumbnails::class)
+    ->dailyAt('07:55')
     ->timezone('Europe/Berlin')
     ->withoutOverlapping();
 

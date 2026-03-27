@@ -27,8 +27,6 @@
         @endif
 
         <section class="report-development">
-            <h2>Summary</h2>
-
             @if ($dailyTotals->isEmpty())
                 <p>No daily development data found for the last {{ $timeframeDays }} days.</p>
             @else
@@ -46,7 +44,7 @@
 
                             <svg aria-label="{{ $chart['title'] }} over the last 7 days" role="img" viewBox="0 0 {{ $chart['width'] }} {{ $chart['height'] }}">
                                 @foreach ($chart['axis_labels'] as $axisLabel)
-                                    <line x1="56" x2="{{ $chart['width'] }}" y1="{{ $axisLabel['y'] - 4 }}" y2="{{ $axisLabel['y'] - 4 }}"></line>
+                                    <line x1="{{ $chart['plot_x_start'] }}" x2="{{ $chart['width'] }}" y1="{{ $axisLabel['y'] - 4 }}" y2="{{ $axisLabel['y'] - 4 }}"></line>
                                     <text class="chart-axis-label" x="{{ $axisLabel['x'] }}" y="{{ $axisLabel['y'] }}">{{ $axisLabel['text'] }}</text>
                                 @endforeach
                                 <polyline points="{{ $chart['points'] }}"></polyline>
@@ -67,53 +65,14 @@
             @endif
         </section>
 
-        <section class="report-strategy">
-            <h2>Creative Strategy</h2>
-
-            @if ($fetchedAds->isEmpty())
-                <p>No Meta ad performance data found for the last 7 days.</p>
-            @else
-                <section>
-                    @foreach ($strategyInsights as $dimension)
-                        <article>
-                            <h3>{{ $dimension['title'] }}</h3>
-
-                            <section>
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">{{ $dimension['label'] }}</th>
-                                            <th scope="col">Spend</th>
-                                            <th scope="col">Purchases</th>
-                                            <th scope="col">CPA</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($dimension['rows'] as $row)
-                                            <tr>
-                                                <th scope="row">{{ $row['value'] }}</th>
-                                                <td>{{ number_format($row['spend'], 2, ',', '.') }}€</td>
-                                                <td>{{ $row['purchases'] }}</td>
-                                                <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </section>
-                        </article>
-                    @endforeach
-                </section>
-            @endif
-        </section>
-
         <section class="report-media-buying">
             <h2>Media Buying</h2>
             @if ($winnerAdsError)
                 <p class="error">{{ $winnerAdsError }}</p>
             @elseif ($winnerAds->isEmpty())
-                <p>✓ All winning creative tests have been added to a scaling campaign.</p>
+                <p>✓ All winning creative tests are being scaled.</p>
             @else
-                <p>Identified {{ $winnerAds->count() }} creative testing winner{{ $winnerAds->count() === 1 ? '' : 's' }} that should be added to a scaling campaign.</p>
+                <p>Identified {{ $winnerAds->count() }} creative testing winner{{ $winnerAds->count() === 1 ? '' : 's' }} to scale.</p>
 
                 @foreach ($winnerAds as $winnerAd)
                     <article>
@@ -143,20 +102,62 @@
                                     <p>No scaling campaigns found.</p>
                                 @else
                                     <label>
-                                        Scale into
                                         <select name="campaign" required>
                                             @foreach ($scalingCampaigns as $campaign)
                                                 <option value='@json(["id" => $campaign["campaign_id"], "name" => $campaign["campaign_name"]])'>{{ $campaign['campaign_name'] }}</option>
                                             @endforeach
                                         </select>
                                     </label>
-
-                                    <button type="submit">Add</button>
+                                    <button type="submit">Scale</button>
                                 @endif
                             </form>
                         </section>
                     </article>
                 @endforeach
+            @endif
+        </section>
+
+        
+
+        <section class="report-strategy">
+            <h2>Creative Strategy</h2>
+
+            @if ($fetchedAds->isEmpty())
+                <p>No Meta ad performance data found for the last 7 days.</p>
+            @else
+                <section>
+                    @foreach ($strategyInsights as $dimension)
+                        <article>
+                            <h3>{{ $dimension['title'] }}</h3>
+
+                            <section>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">{{ $dimension['label'] }}</th>
+                                            <th scope="col">Spend</th>
+                                            <th scope="col">Purchases</th>
+                                            <th scope="col">CPA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($dimension['rows'] as $row)
+                                            <tr @class(['meets-target' => ! empty($row['meets_target'])])>
+                                                <th scope="row">{{ $row['value'] }}</th>
+                                                <td>
+                                                    {{ number_format($row['spend'], 2, ',', '.') }}€
+                                                    <small @class(['meets-target' => ! empty($row['meets_target'])])>{{ number_format($row['spend_share_percent'] ?? 0, 1, ',', '.') }}%</small>
+                                                </td>
+                                                <td>{{ $row['purchases'] }}</td>
+                                                <td>{{ number_format($row['cpa'], 2, ',', '.') }}€</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </section>
+                        </article>
+                    @endforeach
+                </section>
             @endif
         </section>
 

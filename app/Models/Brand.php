@@ -32,6 +32,11 @@ class Brand extends Model
         return $this->hasMany(AdDailyEntity::class);
     }
 
+    public function metaPhase4Creatives(): HasMany
+    {
+        return $this->hasMany(MetaPhase4Creative::class);
+    }
+
     public function getRouteKeyName(): string
     {
         return 'handle';

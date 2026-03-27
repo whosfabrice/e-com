@@ -166,6 +166,42 @@ Route::get('/brands/{brand}', function (
     $winnerAdsError = null;
     $winnerAdsCachedAt = null;
     $winnerAdsExpiresAt = null;
+    $niceChartMax = function (float $value): float {
+        if ($value <= 0) {
+            return 1.0;
+        }
+
+        $magnitude = 10 ** floor(log10($value));
+        $normalized = $value / $magnitude;
+
+        $niceNormalized = match (true) {
+            $normalized <= 1 => 1,
+            $normalized <= 2 => 2,
+            $normalized <= 2.5 => 2.5,
+            $normalized <= 5 => 5,
+            default => 10,
+        };
+
+        return $niceNormalized * $magnitude;
+    };
+    $formatChartAxisLabel = function (float $value, string $metric): string {
+        $suffix = $metric === 'spend' || $metric === 'cpa' ? '€' : '';
+
+        if ($value >= 1000) {
+            $compact = $value / 1000;
+            $decimals = fmod($compact, 1.0) === 0.0 ? 0 : 1;
+
+            return number_format($compact, $decimals, ',', '.').'k'.$suffix;
+        }
+
+        if ($metric === 'spend' || $metric === 'cpa') {
+            $decimals = $value >= 100 ? 0 : ($value >= 10 ? 1 : 2);
+
+            return number_format($value, $decimals, ',', '.').$suffix;
+        }
+
+        return number_format($value, 0, ',', '.');
+    };
 
     try {
         $reportData = $storedAdReportService->reportDataForBrand($brand, $timeframeDays);
@@ -175,22 +211,42 @@ Route::get('/brands/{brand}', function (
         $scalingCampaigns = collect($reportData['scaling_campaigns'] ?? []);
         $dailyTotals = collect($reportData['daily_totals'] ?? []);
         $dataCoverage = $reportData['coverage'] ?? null;
-        $strategyInsights = $slackReportBuilder->creativeStrategyInsights($fetchedAds);
+        $metaTargets = $brand->targets->where('platform', AdvertisingPlatform::Meta->value);
+        $targetCpa = (float) ($metaTargets->firstWhere('metric', TargetMetric::Cpa->value)?->value ?? 0);
+        $targetPurchases = (int) ($metaTargets->firstWhere('metric', TargetMetric::Purchases->value)?->value ?? 0);
+        $strategyInsights = collect($slackReportBuilder->creativeStrategyInsights($fetchedAds))
+            ->map(function (array $dimension) use ($targetCpa, $targetPurchases): array {
+                return [
+                    ...$dimension,
+                    'rows' => collect($dimension['rows'] ?? [])
+                        ->map(fn (array $row): array => [
+                            ...$row,
+                            'meets_target' => $targetCpa > 0
+                                && $targetPurchases > 0
+                                && (int) ($row['purchases'] ?? 0) >= $targetPurchases
+                                && (float) ($row['cpa'] ?? 0) <= $targetCpa,
+                        ])
+                        ->all(),
+                ];
+            })
+            ->all();
         $developmentCharts = collect([
             ['title' => 'Spend', 'metric' => 'spend'],
             ['title' => 'Purchases', 'metric' => 'purchases'],
             ['title' => 'CPA', 'metric' => 'cpa'],
-        ])->map(function (array $chart) use ($dailyTotals): array {
+        ])->map(function (array $chart) use ($dailyTotals, $niceChartMax, $formatChartAxisLabel): array {
             $values = $dailyTotals->pluck($chart['metric'])->map(fn (mixed $value): float => (float) $value)->values();
             $width = 640;
             $height = 180;
-            $paddingLeft = 56;
+            $paddingLeft = 80;
+            $axisLabelX = 56;
             $paddingRight = 8;
             $paddingTop = 12;
             $paddingBottom = 28;
             $plotWidth = $width - $paddingLeft - $paddingRight;
             $plotHeight = $height - $paddingTop - $paddingBottom;
-            $maxValue = max((float) ($values->max() ?? 0), 1.0);
+            $rawMaxValue = max((float) ($values->max() ?? 0), 1.0);
+            $maxValue = $niceChartMax($rawMaxValue);
             $minValue = 0.0;
             $xStep = $values->count() > 1 ? $plotWidth / ($values->count() - 1) : 0.0;
 
@@ -214,27 +270,22 @@ Route::get('/brands/{brand}', function (
                 ...$chart,
                 'width' => $width,
                 'height' => $height,
+                'plot_x_start' => $paddingLeft,
                 'axis_labels' => [
                     [
-                        'x' => $paddingLeft - 8,
+                        'x' => $axisLabelX,
                         'y' => $paddingTop + 4,
-                        'text' => $chart['metric'] === 'spend' || $chart['metric'] === 'cpa'
-                            ? number_format($maxValue, 2, ',', '.').'€'
-                            : number_format($maxValue, 0, ',', '.'),
+                        'text' => $formatChartAxisLabel($maxValue, $chart['metric']),
                     ],
                     [
-                        'x' => $paddingLeft - 8,
+                        'x' => $axisLabelX,
                         'y' => $paddingTop + ($plotHeight / 2) + 4,
-                        'text' => $chart['metric'] === 'spend' || $chart['metric'] === 'cpa'
-                            ? number_format($maxValue / 2, 2, ',', '.').'€'
-                            : number_format($maxValue / 2, 0, ',', '.'),
+                        'text' => $formatChartAxisLabel($maxValue / 2, $chart['metric']),
                     ],
                     [
-                        'x' => $paddingLeft - 8,
+                        'x' => $axisLabelX,
                         'y' => $paddingTop + $plotHeight + 4,
-                        'text' => $chart['metric'] === 'spend' || $chart['metric'] === 'cpa'
-                            ? number_format(0, 2, ',', '.').'€'
-                            : '0',
+                        'text' => $formatChartAxisLabel(0, $chart['metric']),
                     ],
                 ],
                 'labels' => $dailyTotals->pluck('date')->map(fn (string $date): string => Carbon::parse($date)->format('D'))->values()->all(),

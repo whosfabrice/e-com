@@ -118,6 +118,7 @@ body > header {
     background: var(--surface);
     border-bottom: 1px solid var(--line);
     display: flex;
+    flex: 0 0 var(--header-h);
     height: var(--header-h);
     justify-content: center;
     z-index: 2;
@@ -273,10 +274,15 @@ main {
 footer {
     background: var(--surface);
     border-top: 1px solid var(--line);
+    flex: 0 0 var(--footer-h);
     font-size: 9px;
     height: var(--footer-h);
     line-height: var(--footer-h);
     text-align: center;
+}
+
+footer p {
+    margin: 0;
 }
 
 h1,
@@ -409,28 +415,37 @@ button {
     background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-2);
+    grid-template-columns: auto minmax(0, 1fr);
     margin-top: var(--space-3);
     padding: var(--space-3);
 }
 
 .report-media-buying figure {
+    align-self: stretch;
     margin: 0;
 }
 
 .report-media-buying figure img {
-    max-width: 180px;
+    display: block;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+    width: auto;
 }
 
 .report-media-buying article > section {
     display: grid;
-    gap: var(--space-2);
+    align-content: start;
+    gap: 10px;
+    min-width: 0;
 }
 
 .report-media-buying article h3 {
     font-size: 16px;
     font-weight: 400;
     line-height: 1.25;
+    overflow-wrap: anywhere;
 }
 
 .report-media-buying article h3 a {
@@ -443,6 +458,7 @@ button {
 
 .report-media-buying article p {
     color: var(--muted);
+    margin: 0;
 }
 
 .report-media-buying article form,
@@ -453,10 +469,27 @@ button {
     gap: var(--space-2);
 }
 
-.report-media-buying article form label,
 .settings-shell form label {
     display: grid;
     gap: 4px;
+}
+
+.report-media-buying article form {
+    align-items: center;
+    flex-wrap: nowrap;
+    margin-top: 2px;
+    width: 100%;
+}
+
+.report-media-buying article form select {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+
+.report-media-buying article form button {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .development-charts {
@@ -469,9 +502,9 @@ button {
     background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
-    gap: var(--space-2);
+    gap: 12px;
     overflow: visible;
-    padding: var(--space-3);
+    padding: 22px 24px 20px;
     position: relative;
     z-index: 0;
 }
@@ -481,14 +514,27 @@ button {
     z-index: 2;
 }
 
+.development-charts article h3 {
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0;
+}
+
 .development-charts article p {
     color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    line-height: 1;
+    margin: 0;
 }
 
 .development-charts article p small {
-    display: block;
+    display: inline;
     font-size: 12px;
-    margin-top: 2px;
+    margin-top: 0;
+    white-space: nowrap;
 }
 
 .development-charts svg {
@@ -616,8 +662,28 @@ button {
 }
 
 .report-strategy tbody th {
-    color: var(--muted);
+    color: var(--text);
     font-weight: 500;
+}
+
+.report-strategy td small {
+    color: var(--muted);
+    display: inline-block;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    margin-left: 6px;
+    min-width: 4.5ch;
+    text-align: right;
+}
+
+.report-strategy tbody tr.meets-target {
+    background: rgba(73, 214, 95, 0.08);
+}
+
+.report-strategy tbody tr.meets-target th,
+.report-strategy tbody tr.meets-target td,
+.report-strategy td small.meets-target {
+    color: #7ae18b;
 }
 
 .settings-shell fieldset {
@@ -664,7 +730,12 @@ button {
 
 @media (min-width: 900px) {
     .report-media-buying article {
-        grid-template-columns: 180px 1fr;
+        column-gap: 18px;
+    }
+
+    .report-media-buying figure {
+        align-self: start;
+        height: 100%;
     }
 
     .development-charts {
@@ -673,5 +744,40 @@ button {
 
     .report-strategy > section {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 749px) {
+    .report-media-buying article {
+        grid-template-columns: 1fr;
+    }
+
+    .report-media-buying figure {
+        align-self: start;
+        height: auto;
+    }
+
+    .report-media-buying figure img {
+        height: auto;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .report-media-buying article form {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .report-media-buying article form label {
+        width: 100%;
+    }
+
+    .report-media-buying article form button,
+    .report-media-buying article form select {
+        width: 100%;
+    }
+
+    .development-charts article {
+        padding: 18px;
     }
 }

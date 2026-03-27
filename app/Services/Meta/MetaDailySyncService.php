@@ -9,6 +9,7 @@ use App\Models\Brand;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MetaDailySyncService
 {
@@ -26,7 +27,7 @@ class MetaDailySyncService
         $now = now();
 
         $dailyRows = $this->fetchDailyRows($brand, $sinceDate, $untilDate);
-        $adDetails = $this->fetchAdDetails($dailyRows->pluck('ad_id')->unique()->values()->all());
+        $adDetails = $this->fetchAdDetails($brand, $dailyRows);
 
         $entityRows = $dailyRows
             ->map(function (array $row) use ($adDetails, $brand, $now, $platform): array {
@@ -45,6 +46,18 @@ class MetaDailySyncService
                 ];
             })
             ->values();
+
+        Log::info('Meta daily sync entity row samples.', [
+            'brand_id' => $brand->id,
+            'since' => $sinceDate,
+            'until' => $untilDate,
+            'samples' => $entityRows->take(5)->map(fn (array $row): array => [
+                'ad_id' => $row['ad_id'],
+                'ad_name' => $row['ad_name'],
+                'creative_id' => $row['creative_id'],
+                'thumbnail_url' => $row['thumbnail_url'],
+            ])->all(),
+        ]);
 
         DB::transaction(function () use ($brand, $entityRows, $platform, $sinceDate, $untilDate, $dailyRows, $now): void {
             AdDailyEntity::query()
@@ -165,19 +178,25 @@ class MetaDailySyncService
             ->values();
     }
 
-    protected function fetchAdDetails(array $adIds): array
+    protected function fetchAdDetails(Brand $brand, Collection $dailyRows): array
     {
-        if ($adIds === []) {
+        $requestedAdIds = $dailyRows
+            ->pluck('ad_id')
+            ->filter(fn (mixed $adId): bool => is_string($adId) && $adId !== '')
+            ->unique()
+            ->values();
+
+        if ($requestedAdIds->isEmpty()) {
             return [];
         }
 
-        return collect($adIds)
-            ->chunk(50)
+        return $requestedAdIds
+            ->chunk(25)
             ->reduce(function (array $carry, Collection $chunk): array {
-                $response = $this->metaGraphClient->get('', [
-                    'ids' => implode(',', $chunk->all()),
-                    'fields' => 'creative{id,thumbnail_url}',
-                ]);
+                $response = $this->metaGraphClient->batchGetNodes(
+                    $chunk->all(),
+                    'id,name,creative{id,thumbnail_url}',
+                );
 
                 return [
                     ...$carry,
@@ -188,6 +207,7 @@ class MetaDailySyncService
                                 'thumbnail_url' => data_get($ad, 'creative.thumbnail_url'),
                             ],
                         ])
+                        ->filter(fn (array $details, string $adId): bool => $adId !== '')
                         ->all(),
                 ];
             }, []);
@@ -213,8 +233,10 @@ class MetaDailySyncService
 
     protected function countPurchases(array $actions): int
     {
-        $purchaseAction = collect($actions)->firstWhere('action_type', 'purchase');
-
-        return (int) ($purchaseAction['value'] ?? 0);
+        return (int) collect($actions)
+            ->filter(function (array $action): bool {
+                return (string) ($action['action_type'] ?? '') === 'omni_purchase';
+            })
+            ->sum(fn (array $action): int => (int) ($action['value'] ?? 0));
     }
 }

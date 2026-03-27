@@ -6,6 +6,7 @@ use App\Enums\AdvertisingPlatform;
 use App\Enums\TargetMetric;
 use App\Models\AdDailyEntity;
 use App\Models\Brand;
+use App\Models\MetaPhase4Creative;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -25,6 +26,7 @@ class StoredAdReportService
                 ->where('source', 'meta')
                 ->whereIn('metric', ['spend', 'purchases'])])
             ->get();
+        $storedPhase4Creatives = $this->storedPhase4Creatives($brand);
 
         $dailyRows = $entities
             ->map(fn (AdDailyEntity $entity): array => [
@@ -42,14 +44,22 @@ class StoredAdReportService
 
         $dailyTotals = $this->buildDailyTotals($dailyRows, $days);
         $fetchedAds = $this->buildFetchedAds($brand, $dailyRows);
-        $scalingCampaigns = $this->buildScalingCampaigns($dailyRows);
-        $winnerAds = $this->buildWinnerAds($brand, $fetchedAds, $dailyRows);
+        $scalingCampaigns = $this->buildScalingCampaigns($storedPhase4Creatives);
+        $winnerAds = $this->buildWinnerAds($brand, $fetchedAds, $storedPhase4Creatives);
+        $scaledAdNames = $storedPhase4Creatives
+            ->pluck('ad_name')
+            ->map(fn (mixed $adName): string => $this->normalizeAdName((string) $adName))
+            ->filter(fn (string $adName): bool => $adName !== '')
+            ->unique()
+            ->values()
+            ->all();
         $coverage = $this->buildCoverage($brand);
 
         return [
             'winner_ads' => $winnerAds,
             'fetched_ads' => $fetchedAds,
             'scaling_campaigns' => $scalingCampaigns,
+            'scaled_ad_names' => $scaledAdNames,
             'daily_totals' => $dailyTotals,
             'coverage' => $coverage,
         ];
@@ -132,7 +142,7 @@ class StoredAdReportService
             ->values();
     }
 
-    protected function buildWinnerAds(Brand $brand, Collection $fetchedAds, Collection $dailyRows): Collection
+    protected function buildWinnerAds(Brand $brand, Collection $fetchedAds, Collection $storedPhase4Creatives): Collection
     {
         $targetCpa = $this->targetValueForBrand($brand, TargetMetric::Cpa);
         $targetPurchases = (int) $this->targetValueForBrand($brand, TargetMetric::Purchases);
@@ -141,10 +151,10 @@ class StoredAdReportService
             return collect();
         }
 
-        $scaledCreativeIds = $dailyRows
-            ->filter(fn (array $row): bool => str_starts_with($row['campaign_name'], 'Coredrive | Phase 4'))
-            ->pluck('creative_id')
-            ->filter(fn (mixed $creativeId): bool => is_string($creativeId) && $creativeId !== '')
+        $scaledAdNames = $storedPhase4Creatives
+            ->pluck('ad_name')
+            ->map(fn (mixed $adName): string => $this->normalizeAdName((string) $adName))
+            ->filter(fn (string $adName): bool => $adName !== '')
             ->unique()
             ->values()
             ->all();
@@ -153,9 +163,28 @@ class StoredAdReportService
             ->filter(fn (array $ad): bool => str_starts_with($ad['campaign_name'], 'Coredrive | Phase 2'))
             ->filter(fn (array $ad): bool => $ad['purchases'] >= $targetPurchases)
             ->filter(fn (array $ad): bool => $ad['cpa'] <= $targetCpa)
-            ->reject(fn (array $ad): bool => in_array($ad['creative_id'], $scaledCreativeIds, true))
+            ->reject(fn (array $ad): bool => in_array($this->normalizeAdName((string) ($ad['ad_name'] ?? '')), $scaledAdNames, true))
             ->sortByDesc('spend')
             ->values();
+    }
+
+    protected function storedPhase4Creatives(Brand $brand): Collection
+    {
+        return MetaPhase4Creative::query()
+            ->where('brand_id', $brand->id)
+            ->get(['campaign_id', 'campaign_name', 'ad_name', 'creative_id'])
+            ->map(fn (MetaPhase4Creative $creative): array => [
+                'campaign_id' => $creative->campaign_id,
+                'campaign_name' => $creative->campaign_name,
+                'ad_name' => $creative->ad_name ?? '',
+                'creative_id' => $creative->creative_id,
+            ])
+            ->values();
+    }
+
+    protected function normalizeAdName(string $adName): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', mb_strtolower($adName)) ?? '');
     }
 
     protected function metricValue(AdDailyEntity $entity, string $metric): float

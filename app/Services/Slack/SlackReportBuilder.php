@@ -233,7 +233,16 @@ class SlackReportBuilder
                         ];
                     })
                     ->pipe(fn (Collection $rows): Collection => $this->sortInsightRows($rows, $dimension['sort']))
-                    ->values()
+                    ->values();
+
+                $totalSpend = (float) $rows->sum('spend');
+                $rows = $rows
+                    ->map(fn (array $row): array => [
+                        ...$row,
+                        'spend_share_percent' => $totalSpend > 0
+                            ? round(($row['spend'] / $totalSpend) * 100, 1)
+                            : 0.0,
+                    ])
                     ->all();
 
                 return [
