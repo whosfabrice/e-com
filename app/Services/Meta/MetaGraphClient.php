@@ -24,7 +24,8 @@ class MetaGraphClient
             ->baseUrl((string) config('services.meta.graph_api_url'))
             ->withToken($accessToken)
             ->acceptJson()
-            ->timeout(30)
+            ->retry(3, 2000)
+            ->timeout(60)
             ->get($path, $query)
             ->throw()
             ->json();
@@ -43,7 +44,8 @@ class MetaGraphClient
             ->withToken($accessToken)
             ->acceptJson()
             ->asForm()
-            ->timeout(30)
+            ->retry(3, 2000)
+            ->timeout(60)
             ->post($path, $payload)
             ->throw()
             ->json();

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Brand;
 use App\Services\Meta\MetaPhase4CreativeSyncService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class SyncMetaPhase4Creatives extends Command
 {
@@ -31,6 +32,12 @@ class SyncMetaPhase4Creatives extends Command
                     $result['creative_count'],
                 ));
             } catch (\Throwable $throwable) {
+                Log::error('Phase 4 creative sync failed.', [
+                    'brand_id' => $brand->id,
+                    'brand_name' => $brand->name,
+                    'brand_handle' => $brand->handle,
+                    'message' => $throwable->getMessage(),
+                ]);
                 $this->error(sprintf('Failed syncing Phase 4 creatives for %s: %s', $brand->name, $throwable->getMessage()));
             }
         }
