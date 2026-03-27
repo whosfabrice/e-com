@@ -88,9 +88,9 @@
                             </h3>
 
                             <p>
-                                Spend: {{ number_format($winnerAd['spend'], 2, ',', '.') }}€ ·
-                                Purchases: {{ $winnerAd['purchases'] }} ·
-                                CPA: {{ number_format($winnerAd['cpa'], 2, ',', '.') }}€
+                                {{ number_format($winnerAd['spend'], 2, ',', '.') }}€ Spend ·
+                                {{ $winnerAd['purchases'] }} Purchases · 
+                                {{ number_format($winnerAd['cpa'], 2, ',', '.') }}€ CPA
                             </p>
 
                             <form action="{{ route('brand.duplicate-ad', $brand) }}" method="POST">
