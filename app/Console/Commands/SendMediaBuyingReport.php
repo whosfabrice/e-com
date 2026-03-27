@@ -3,19 +3,20 @@
 namespace App\Console\Commands;
 
 use App\Models\Brand;
-use App\Services\Meta\MetaWinnerAdService;
+use App\Services\StoredAdReportService;
 use App\Services\Slack\SlackApiClient;
 use App\Services\Slack\SlackReportBuilder;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class SendMediaBuyingReport extends Command
 {
     protected $signature = 'report:send-media-buying {brand? : Optional brand handle}';
 
-    protected $description = 'Fetch winner ads from Meta and send the Slack report.';
+    protected $description = 'Send the Slack media buying report from stored DB-backed report data.';
 
     public function handle(
-        MetaWinnerAdService $metaWinnerAdService,
+        StoredAdReportService $storedAdReportService,
         SlackReportBuilder $slackReportBuilder,
         SlackApiClient $slackApiClient,
     ): int
@@ -34,10 +35,10 @@ class SendMediaBuyingReport extends Command
                     continue;
                 }
 
-                $reportData = $metaWinnerAdService->reportDataForBrand($brand);
-                $winnerAds = $reportData['winner_ads'];
-                $fetchedAds = $reportData['fetched_ads'];
-                $scalingCampaigns = $reportData['scaling_campaigns'];
+                $reportData = $storedAdReportService->reportDataForBrand($brand, 7);
+                $winnerAds = collect($reportData['winner_ads'] ?? []);
+                $fetchedAds = collect($reportData['fetched_ads'] ?? []);
+                $scalingCampaigns = collect($reportData['scaling_campaigns'] ?? []);
 
                 $slackApiClient->postMessage(
                     $brand->slack_channel_id,
@@ -56,6 +57,12 @@ class SendMediaBuyingReport extends Command
                     $winnerAds->count() === 1 ? '' : 's',
                 ));
             } catch (\Throwable $throwable) {
+                Log::error('Scheduled media buying report failed.', [
+                    'brand_id' => $brand->id,
+                    'brand_name' => $brand->name,
+                    'brand_handle' => $brand->handle,
+                    'message' => $throwable->getMessage(),
+                ]);
                 $this->error(sprintf('Failed for %s: %s', $brand->name, $throwable->getMessage()));
             }
         }
