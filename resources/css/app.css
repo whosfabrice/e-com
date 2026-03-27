@@ -1,31 +1,31 @@
 :root {
-    --bg: #121212;
-    --main: #181818;
-    --surface: #1b1b1b;
-    --tile: #212121;
-    --text: #ffffff;
-    --muted: rgba(255, 255, 255, 0.7);
-    --line: #2b2b2b;
-    --soft-line: #313131;
-    --space-1: 8px;
-    --space-2: 12px;
-    --space-3: 16px;
-    --space-4: 24px;
-    --space-5: 32px;
-    --header-h: 64px;
-    --footer-h: 20px;
     --aside-w: 280px;
+    --bg: #121212;
+    --footer-h: 20px;
+    --header-h: 56px;
+    --line: #2b2b2b;
+    --main: #181818;
+    --muted: rgba(255, 255, 255, 0.7);
+    --soft-line: #313131;
+    --space-1: 6px;
+    --space-2: 10px;
+    --space-3: 12px;
+    --space-4: 18px;
+    --space-5: 24px;
+    --surface: #1b1b1b;
+    --text: #ffffff;
+    --tile: #212121;
 }
 
 html[data-theme="light"] {
     --bg: #f5f5f5;
-    --main: #ececec;
-    --surface: #ffffff;
-    --tile: #f0f0f0;
-    --text: #121212;
-    --muted: rgba(18, 18, 18, 0.7);
     --line: #d0d0d0;
+    --main: #ececec;
+    --muted: rgba(18, 18, 18, 0.7);
     --soft-line: #dddddd;
+    --surface: #ffffff;
+    --text: #121212;
+    --tile: #f0f0f0;
 }
 
 html,
@@ -33,9 +33,9 @@ body {
     box-sizing: border-box;
     height: 100%;
     margin: 0;
+    overflow: hidden;
     padding: 0;
     width: 100%;
-    overflow: hidden;
 }
 
 html {
@@ -102,7 +102,7 @@ body {
         "SF Mono", "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace, "Apple Color Emoji",
         "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.5;
     min-height: 100dvh;
 }
@@ -127,8 +127,7 @@ body > header {
 body > header h1 {
     align-items: center;
     display: inline-flex;
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 18px;
     gap: 6px;
     letter-spacing: 0.02em;
     line-height: 1;
@@ -159,7 +158,8 @@ body > header input {
     left: var(--space-3);
     opacity: 0;
     position: absolute;
-    top: 18px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 body > header label[for="hamburger"] {
@@ -170,7 +170,8 @@ body > header label[for="hamburger"] {
     line-height: 0;
     padding: 6px;
     position: absolute;
-    top: 14px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 body > header label[for="hamburger"] svg {
@@ -190,7 +191,8 @@ body > header #theme-toggle {
     padding: 0;
     position: absolute;
     right: var(--space-3);
-    top: 14px;
+    top: 50%;
+    transform: translateY(-50%);
     width: 36px;
 }
 
@@ -235,7 +237,7 @@ body > header aside nav + nav {
 }
 
 body > header aside h2 {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 400;
     letter-spacing: 0.04em;
     margin: 0 0 var(--space-2);
@@ -276,7 +278,7 @@ footer {
     background: var(--surface);
     border-top: 1px solid var(--line);
     flex: 0 0 var(--footer-h);
-    font-size: 9px;
+    font-size: 8px;
     height: var(--footer-h);
     line-height: var(--footer-h);
     text-align: center;
@@ -293,6 +295,7 @@ h4,
 h5,
 h6,
 p {
+    font-weight: normal;
     margin: 0;
 }
 
@@ -326,7 +329,7 @@ button {
     border-radius: 0;
     color: inherit;
     font: inherit;
-    padding: 10px 12px;
+    padding: 8px 10px;
 }
 
 button {
@@ -371,7 +374,7 @@ button {
 
 .report-shell > header h1,
 .settings-shell > header h1 {
-    font-size: 28px;
+    font-size: 24px;
     font-weight: 400;
     line-height: 1.05;
 }
@@ -408,7 +411,7 @@ button {
 
 .report-shell > section > h2,
 .settings-shell > section > h2 {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 400;
     margin-bottom: var(--space-3);
 }
@@ -420,11 +423,12 @@ button {
 }
 
 .report-media-buying article {
+    align-items: start;
     background: var(--tile);
     border: 1px solid var(--soft-line);
     display: grid;
     gap: var(--space-2);
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 128px minmax(0, 1fr);
     margin-top: var(--space-3);
     padding: var(--space-3);
 }
@@ -436,10 +440,9 @@ button {
 
 .report-media-buying figure img {
     display: block;
-    height: 100%;
-    max-width: none;
+    height: auto;
     object-fit: cover;
-    width: auto;
+    width: 100%;
 }
 
 .report-media-buying article > section {
@@ -450,7 +453,7 @@ button {
 }
 
 .report-media-buying article h3 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
     line-height: 1.25;
     overflow-wrap: anywhere;
@@ -484,19 +487,21 @@ button {
 
 .report-media-buying article form {
     align-items: center;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     margin-top: 2px;
     width: 100%;
 }
 
-.report-media-buying article form select {
-    flex: 1 1 auto;
+.report-media-buying article form label {
     min-width: 0;
+}
+
+.report-media-buying article form select {
     width: 100%;
 }
 
 .report-media-buying article form button {
-    flex: 0 0 auto;
     white-space: nowrap;
 }
 
@@ -523,7 +528,7 @@ button {
 }
 
 .development-charts article h3 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
     margin: 0;
 }
@@ -533,14 +538,14 @@ button {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
     margin: 0;
 }
 
 .development-charts article p small {
     display: inline;
-    font-size: 12px;
+    font-size: 11px;
     margin-top: 0;
     white-space: nowrap;
 }
@@ -598,19 +603,19 @@ button {
 .development-charts svg .chart-tooltip {
     fill: #121212;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 12px;
     text-anchor: middle;
 }
 
 .development-charts svg text {
     fill: var(--muted);
     font-family: inherit;
-    font-size: 16px;
+    font-size: 14px;
     text-anchor: middle;
 }
 
 .development-charts svg .chart-axis-label {
-    font-size: 18px;
+    font-size: 16px;
     text-anchor: end;
 }
 
@@ -628,7 +633,7 @@ button {
 }
 
 .report-strategy article h3 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
     margin-bottom: var(--space-2);
 }
@@ -655,7 +660,7 @@ button {
 
 .report-strategy thead th {
     border-bottom: 1px solid var(--line);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 400;
 }
 
@@ -677,7 +682,7 @@ button {
 .report-strategy td small {
     color: var(--muted);
     display: inline-block;
-    font-size: 11px;
+    font-size: 10px;
     font-variant-numeric: tabular-nums;
     margin-left: 6px;
     min-width: 4.5ch;
