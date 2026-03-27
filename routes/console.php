@@ -14,34 +14,25 @@ Schedule::command('queue:work --stop-when-empty --tries=3')
     ->everyMinute()
     ->withoutOverlapping();
 
-Schedule::command(SyncMetaDaily::class, ['--days' => 3])
-    ->dailyAt('02:30')
+Schedule::command(PruneMetaDaily::class, ['--days' => 180])
+    ->dailyAt('05:50')
     ->timezone('Europe/Berlin')
     ->withoutOverlapping();
 
 Schedule::command(SyncMetaDaily::class, ['--days' => 7])
     ->weekdays()
-    ->at('07:45')
+    ->at('05:55')
     ->timezone('Europe/Berlin')
     ->withoutOverlapping();
 
 Schedule::command(SyncMetaPhase4Creatives::class)
-    ->dailyAt('07:50')
+    ->dailyAt('06:00')
     ->timezone('Europe/Berlin')
     ->withoutOverlapping();
 
 Schedule::command(SyncMetaWinnerAdThumbnails::class)
-    ->dailyAt('07:55')
+    ->dailyAt('06:05')
     ->timezone('Europe/Berlin')
-    ->withoutOverlapping();
-
-Schedule::command(PruneMetaDaily::class, ['--days' => 180])
-    ->dailyAt('03:30')
-    ->timezone('Europe/Berlin')
-    ->withoutOverlapping();
-
-Schedule::command(WarmBrandReportCache::class)
-    ->hourly()
     ->withoutOverlapping();
 
 Schedule::command(SendMediaBuyingReport::class)
